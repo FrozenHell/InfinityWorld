@@ -7,15 +7,25 @@ class myhouse extends Actor
 struct cell {
 	var actor north,east,west,south,lex,wex,pol,roof,grain;
 	var bool visible;
+	
+	structdefaultproperties {
+		visible = false;
+	}
 };
 
 var int UtoR,Utor2,UtoR3;
 
+var float asin, acos;
+
+var MyNavigationStruct MyData,MyData2;
+var vector ViewLocation; // положение игрока
+var rotator ViewRotation; // поворот игрока
 var Actor MyPawn;
 var int length,width,height,lenw,widw,heiw;
+var int distance; // модуль проекции расстояния от игрока до дома в квадрате
 var rotator angle;
 var vector center;
-var bool visible;
+var bool visible; // переменная равна false, когда дом существует, но полностью скрыт(все элементы дома выгружены из памяти)
 
 var array<cell> mass;
 
@@ -26,27 +36,37 @@ dllimport final function GetNavData2(out MyNavigationStruct NavData,out MyNaviga
 delegate GetPlayerViewPoint( out vector out_Location, out Rotator out_rotation );
 
 // стейты
-auto state behind {
+state behind {
 	function CheckView() {
-		reload();
-		gotostate('far');
+		if (distance > 5000) {
+			gotostate('far');
+		}
 	}
 	
 	Begin:
-		Sleep(1.0);
+		GetPlayerViewPoint(ViewLocation, ViewRotation);
+		distance = sqrt((ViewLocation.x-Location.x)*(ViewLocation.x-Location.x)+(ViewLocation.y-Location.y)*(ViewLocation.y-Location.y));
+		//`log(distance);
 		CheckView();
+		Sleep(10.0);
 		Goto ('Begin');
 }
 
 auto state far {
 	function CheckView() {
-		gotostate('behind');
+		if (distance < 5000) {
+			clear();
+			generate_house(true);
+			gotostate('behind');
+		} else reload();
 	}
 	
 	Begin:
-		Sleep(5.0);
-		reload();
+		GetPlayerViewPoint(ViewLocation, ViewRotation);
+		distance = sqrt((ViewLocation.x-Location.x)*(ViewLocation.x-Location.x)+(ViewLocation.y-Location.y)*(ViewLocation.y-Location.y));
+		//`log("long:"@distance);
 		CheckView();
+		Sleep(distance*0.001);
 		Goto ('Begin');
 }
 // конец стейтов
@@ -74,6 +94,7 @@ function clear() {
 				mass[i].south.destroy();
 				mass[i].west.destroy();
 				mass[i].pol.destroy();
+				// следующие элементы характерны не для всех ячеек
 				if (mass[i].lex!=None) mass[i].lex.destroy();
 				if (mass[i].wex!=None) mass[i].wex.destroy();
 				if (mass[i].roof!=None) mass[i].roof.destroy();
@@ -88,7 +109,7 @@ private function int isbit(int a,int b) { // возвращает 1 или 0 (бит числа "а" в
 	return((a>>b)%2);
 }
 
-private function int is2bit(int a,int b) { // 0-4
+private function int is2bit(int a,int b) { // возвращает число от 0 до 4
 	return((a>>(b+b))%4);
 }
 
@@ -151,46 +172,43 @@ private function cell drawcell(int celll,const out vector posit,int wzpos,int wx
 }
 
 function gen(Pawn locpawn,optional int len = 10,optional int wid = 10,optional int hei = 10,optional int seed = 0) {
-	local MyNavigationStruct MyData;
-	local int i,j,k,wxpos,wypos,wzpos;
-	local vector pos;
-	local float asin, acos;
 	length = len; width = wid; height = hei;
 	GetNavData(MyData,length,width,height,seed);
 	MyPawn = locpawn;
+	center.x = 0; // совсем не центр, скорее реальная точка приложения дома
+	center.y = 0;
 	angle.Yaw = Rotation.Yaw;
 	asin = sin(Rotation.Yaw/RadToUnrRot);
 	acos = cos(Rotation.Yaw/RadToUnrRot);
-	for (k=0;k<height;k++)
-		for (j=0;j<width;j++)
-			for (i=0;i<length;i++) {
-				pos.x=Location.x+lenw*i*acos-widw*j*asin;
-				pos.y=Location.y+lenw*i*asin+widw*j*acos;
-				pos.z=Location.z+heiw*k;
-				wxpos = i==0?1:i==length-1?2:0;
-				wypos = j==0?1:j==width-1?2:0;
-				wzpos = k==0?1:k==height-1?2:0;
-				mass[i+j*length+k*length*width] = drawcell(MyData.NavigationData[4+i+j*length+k*length*width],pos,wzpos,wxpos,wypos,(i==MyData.NavigationData[0]&&j==MyData.NavigationData[1])||(i==MyData.NavigationData[2]&&j==MyData.NavigationData[3]));
-				// последний параметр в предыдущей строке определяет: находится ли в ячейке лестница
-			}
+	
+	generate_house(true);
+	clear();
+	generate_house();
 }
 
 function gen2(Pawn locpawn,optional int len = 10,optional int wid = 10,optional int hei = 10,optional int seed = 0) {
-	local MyNavigationStruct MyData,MyData2;
-	local int i,j,k,wxpos,wypos,wzpos;
-	local vector pos,ViewLocation;
-	local rotator ViewRotation;
-	local float asin, acos;
 	length = len; width = wid; height = hei;
-	GetPlayerViewPoint( ViewLocation, ViewRotation );
 	GetNavData(MyData,length,width,height,seed);
 	MyPawn = locpawn;
-	GetNavData2(MyData,MyData2,length,width,height,ViewLocation.x-Location.x,ViewLocation.y-Location.y,ViewLocation.z-Location.z);
 	center.x = ((length-1)*lenw/2); // совсем не центр, скорее реальная точка приложения дома
 	center.y = ((width-1)*widw/2);
 	angle.Yaw = Rotation.Yaw;
 	asin = sin(Rotation.Yaw/RadToUnrRot);
 	acos = cos(Rotation.Yaw/RadToUnrRot);
+	
+	generate_house(true);
+	clear();
+	generate_house();
+	
+	visible = true;
+}
+
+private function generate_house(optional bool full=false) {
+	local int i,j,k,wxpos,wypos,wzpos;
+	local vector pos;
+	GetPlayerViewPoint( ViewLocation, ViewRotation );
+	
+	GetNavData2(MyData,MyData2,length,width,height,ViewLocation.x-Location.x-center.x,ViewLocation.y-Location.y-center.y,ViewLocation.z-Location.z-center.z);
 	
 	visible = true;
 	
@@ -203,9 +221,10 @@ function gen2(Pawn locpawn,optional int len = 10,optional int wid = 10,optional 
 				wxpos = i==0?1:i==length-1?2:0;
 				wypos = j==0?1:j==width-1?2:0;
 				wzpos = k==0?1:k==height-1?2:0;
-				if (MyData2.NavigationData[i+j*length+k*length*width] == 2)
-				mass[i+j*length+k*length*width] = drawcell(MyData.NavigationData[4+i+j*length+k*length*width],pos,wzpos,wxpos,wypos,(i==MyData.NavigationData[0]&&j==MyData.NavigationData[1])||(i==MyData.NavigationData[2]&&j==MyData.NavigationData[3]));
-				// последний параметр в предыдущей строке определяет: находится ли в ячейке лестница
+				if (full || (MyData2.NavigationData[i+j*length+k*length*width] == 2))	{
+					mass[i+j*length+k*length*width] = drawcell(MyData.NavigationData[4+i+j*length+k*length*width],pos,wzpos,wxpos,wypos,(i==MyData.NavigationData[0]&&j==MyData.NavigationData[1])||(i==MyData.NavigationData[2]&&j==MyData.NavigationData[3]));
+					// последний параметр в предыдущей строке определяет: находится ли в ячейке лестница
+				}
 			}
 }
 
@@ -253,6 +272,7 @@ private function actor drawHOutPart(int type,int ang,const out vector posit) { /
 
 function reload() {
 	clear();
+	generate_house();
 }
 
 defaultproperties

@@ -14,6 +14,14 @@ exec function rotator UnrRot(float Pitch,float Roll,float Yaw) {
 	return Rota;
 }
 
+exec function vector vec(int x,int y,int z) {
+	local vector ve;
+	ve.x=x;
+	ve.y=y;
+	ve.z=z;
+	return ve;
+}
+
 exec function drawgalaxy(optional int numst = 1000) {
 	if (!generated) {
 		galaxy = Spawn(class'City.mygalaxy',UnPawn(Owner),,vect(500,0,2000),rot(0,0,0));
@@ -42,6 +50,18 @@ exec function drawhouse(optional int seed = 0) {
 	}
 }
 
+exec function genmorehouses() {
+	local int i,j;
+	local myhouse how;
+	for (i=0;i<4;i++) {
+		for (j=0;j<4;j++) {
+			how = Spawn(class'City.myhouse',UnPawn(Owner),,vec(i*5000,j*5000,-40),UnrRot(0,0,0));
+			how.GetPlayerViewPoint = GetPlayerViewPoint;
+			how.gen2(UnPawn(Owner),4,4,10,i+j);
+		}
+	}
+}
+
 exec function cosin() {
 	`log(cos(PI));
 }
@@ -56,7 +76,7 @@ exec function clearhouse() {
 
 defaultproperties
 {
-        Name="Default__UnPlayerController"
+	Name="Default__UnPlayerController"
 	generated = false
 	generatedh = false
 }
