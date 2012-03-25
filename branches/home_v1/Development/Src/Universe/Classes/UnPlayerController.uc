@@ -4,13 +4,13 @@ var mygalaxy galaxy;
 var myhouse house;
 var bool generated,generatedh;
 
-exec function rotator UnrRot(float Pitch,float Roll,float Yaw) {
+exec function rotator UnrRot(float Pitch,float Yaw,float Roll) {
 	local rotator Rota;
 	local float DegToRot;
 	DegToRot = DegToRad*RadToUnrRot;
 	Rota.Pitch = Pitch*DegToRot;
-	Rota.Roll = Roll*DegToRot;
 	Rota.Yaw = Yaw*DegToRot;
+	Rota.Roll = Roll*DegToRot;
 	return Rota;
 }
 
@@ -42,7 +42,7 @@ exec function cleargalaxy() {
 exec function drawhouse(optional int seed = 0) {
 	if (!generatedh) {
 		`log("start");
-		house = Spawn(class'City.myhouse',UnPawn(Owner),,vect(0,-100,-40),UnrRot(0,0,0));
+		house = Spawn(class'City.myhouse',UnPawn(Owner),,vect(0,-100,-40),rot(0,0,0));
 		house.GetPlayerViewPoint = GetPlayerViewPoint;
 		house.gen2(UnPawn(Owner),4,4,4,seed+1);
 		`log("finish");
