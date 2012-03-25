@@ -222,7 +222,7 @@ private function generate_house(optional bool full=false) {
 					wypos = j==0?1:j==width-1?2:0; // дл€ другой оси
 					wzpos = k==0?1:k==height-1?2:0; // дл€ последней оси
 					// если €чейка должна быть видима, а она скрыта
-					if ((full || (MyData2.NavigationData[4+celll] == 2)) && !mass[celll].visible)	{
+					if ((full || (MyData2.NavigationData[celll] == 2)) && !mass[celll].visible)	{
 						// создаЄм еЄ
 						mass[celll] = drawcell(MyData.NavigationData[4+celll],pos,wzpos,wxpos,wypos,(i==MyData.NavigationData[0]&&j==MyData.NavigationData[1])||(i==MyData.NavigationData[2]&&j==MyData.NavigationData[3]));
 						// последний параметр в предыдущей строке определ€ет: находитс€ ли в €чейке лестница
@@ -248,13 +248,11 @@ private function generate_house(optional bool full=false) {
 }
 
 function initialize() {
-	local int i,j,k;
+	local int i;
 	local cell celll; // тут происходит нечто неоптимальное, если смотреть со стороны выделени€ пам€ти
-	// однако, иначе поступать не выйдет
-	for (k=0;k<height;k++)
-		for (j=0;j<width;j++)
-			for (i=0;i<length;i++)
-				mass[i+j*length+k*length*width] = celll;
+	// однако, иначе поступать не выходит
+	for (i=0;i<length*width*height;i++)
+		mass[i] = celll;
 }
 
 private function actor drawHPart(int type,int ang,const out vector posit) { // передавать вектор "по ссылке", а не "по значению", const говорит о том, что вектор не будет мен€тьс€ в этой функции
