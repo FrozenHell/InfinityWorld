@@ -57,7 +57,7 @@ exec function genmorehouses() {
 		for (j=0;j<4;j++) {
 			how = Spawn(class'City.myhouse',UnPawn(Owner),,vec(i*5000,j*5000,-40),UnrRot(0,0,0));
 			how.GetPlayerViewPoint = GetPlayerViewPoint;
-			how.gen2(UnPawn(Owner),4,4,10,i+j);
+			how.gen2(UnPawn(Owner),5,5,10,i+j);
 		}
 	}
 }

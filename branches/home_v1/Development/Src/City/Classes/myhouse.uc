@@ -16,7 +16,8 @@ struct cell {
 var int UtoR,Utor2,UtoR3;
 
 var float asin, acos;
-
+var int dist1,distf; // дистанция ближнего вида и дистанция дальнего вида
+var int currentfloor; // текуший этаж
 var MyNavigationStruct MyData,MyData2;
 var vector ViewLocation; // положение игрока
 var rotator ViewRotation; // поворот игрока
@@ -25,7 +26,19 @@ var int length,width,height,lenw,widw,heiw;
 var int distance; // расстояние от игрока до дома
 var rotator angle;
 var vector center; // вспомогательная переменная для определения точных координат ячеек
-var int visible; // переменная равна 0, когда дом существует, но полностью скрыт(все элементы дома выгружены из памяти), 2 - когда дом полностью проявлён, 1 - когда проявлена только часть
+
+/*
+visible
+00000000 - здание полностью скрыто(или вместо него подгружен LOD)
+00000001 - здание полностью загружено в память
+00000010 - загружена западная часть
+00000100 - загружена восточная часть
+00001000 - загружена северная часть
+00010000 - загружена южная часть
+00100000 - загружена крыша здания
+01000000 - загружены несколько этажей (-2,-1,текущий,+1,+2)
+*/
+var int visible; // переменная показывает видимость
 
 var array<cell> mass;
 
@@ -38,7 +51,8 @@ delegate GetPlayerViewPoint( out vector out_Location, out Rotator out_rotation )
 // -------------------------------стейты--------------------------------
 state behind {
 	function CheckView() {
-		if (distance > 5000) {
+		drawhouse();
+		if (distance > dist1) {
 			gotostate('far');
 		}
 	}
@@ -48,16 +62,15 @@ state behind {
 		distance = VSize(ViewLocation - Location);
 		//`log(distance);
 		CheckView();
-		Sleep(10.0);
+		Sleep(5.0);
 		Goto ('Begin');
 }
 
 auto state far {
 	function CheckView() {
-		if (distance < 5000) {
-			generate_house(true);
+		drawhouse();
+		if (distance < dist1)
 			gotostate('behind');
-		} else reload();
 	}
 	
 	Begin:
@@ -98,6 +111,7 @@ function clear() {
 				if (mass[i].wex!=None) mass[i].wex.destroy();
 				if (mass[i].roof!=None) mass[i].roof.destroy();
 				if (mass[i].grain!=None) mass[i].grain.destroy();
+				// указать что ячейка скрыта
 				mass[i].visible=false;
 			}
 		}
@@ -107,6 +121,10 @@ function clear() {
 
 private function int isbit(int a,int b) { // возвращает 1 или 0 (бит числа "а" в позиции "b")
 	return((a>>b)%2);
+}
+
+private function bool isbitb(int a,int b) { // возвращает 1 или 0 (бит числа "а" в позиции "b")
+	return((a>>b)%2==1);
 }
 
 private function int is2bit(int a,int b) { // возвращает число от 0 до 4
@@ -150,7 +168,7 @@ private function cell drawcell(int celll,const out vector posit,int wzpos,int wx
 	if (wzpos==2) { // если последний этаж
 		if (!st) yachejka.roof=Spawn(class'City.testroof',MyPawn,,posit,angle);
 		else yachejka.roof=Spawn(class'City.testroofstair',MyPawn,,posit,angle);
-		if (wxpos == 1) { // операторы "{" и "}" тут необходимы
+		if (wxpos == 1) {
 			if (wypos == 1) yachejka.grain = Spawn(class'City.testroofang',MyPawn,,posit,qwatrot(3));// верхний левый угол
 			else if (wypos == 2) yachejka.grain = Spawn(class'City.testroofang',MyPawn,,posit,qwatrot(2));// нижний левый угол
 			else yachejka.grain = Spawn(class'City.testroofgrain',MyPawn,,posit,qwatrot(3)); // лево - середина
@@ -181,7 +199,7 @@ function gen(Pawn locpawn,optional int len = 10,optional int wid = 10,optional i
 	asin = sin(Rotation.Yaw/RadToUnrRot);
 	acos = cos(Rotation.Yaw/RadToUnrRot);
 	initialize();
-	generate_house();
+	drawhouse();
 }
 
 function gen2(Pawn locpawn,optional int len = 10,optional int wid = 10,optional int hei = 10,optional int seed = 0) {
@@ -194,10 +212,10 @@ function gen2(Pawn locpawn,optional int len = 10,optional int wid = 10,optional 
 	asin = sin(Rotation.Yaw/RadToUnrRot);
 	acos = cos(Rotation.Yaw/RadToUnrRot);
 	initialize();
-	generate_house();
+	drawhouse();
 }
 
-private function generate_house(optional bool full=false) {
+private function drawhouse(optional bool full=false) {
 	local int i,j,k,wxpos,wypos,wzpos,celll;
 	local vector pos; // позиция ячейки
 	local vector nav; // вспомогательная переменная для определения положения игрока в относительных координатах здания
@@ -208,13 +226,14 @@ private function generate_house(optional bool full=false) {
 	nav.x = (ViewLocation.x-Location.x)*acos+(ViewLocation.y-Location.y)*asin;
 	nav.y = (Location.x-ViewLocation.x)*asin+(ViewLocation.y-Location.y)*acos;
 	nav.z = ViewLocation.z-Location.z;
-	GetNavData2(MyData,MyData2,length,width,height,nav.x,nav.y,nav.z);
-	
-	if (visible<2) {
+	//GetNavData2(MyData,MyData2,length,width,height,nav.x,nav.y,nav.z);
+	if (set_visibility(nav)) {
+		getVisibleMass();
+		
 		for (k=0;k<height;k++)
 			for (j=0;j<width;j++)
 				for (i=0;i<length;i++) {
-				celll = i+j*length+k*length*width;
+					celll = i+j*length+k*length*width;
 					pos.x=Location.x+(lenw*i-center.x)*acos-(widw*j-center.y)*asin;
 					pos.y=Location.y+(lenw*i-center.x)*asin+(widw*j-center.y)*acos;
 					pos.z=Location.z+heiw*k;
@@ -244,7 +263,6 @@ private function generate_house(optional bool full=false) {
 					}
 				}
 	}
-	visible = full?2:1;
 }
 
 function initialize() {
@@ -297,8 +315,65 @@ private function actor drawHOutPart(int type,int ang,const out vector posit) { /
 	return mypExem;
 }
 
-function reload() {
-	generate_house();
+// функция меняет переменную visible и возвращает -1 если изменений нет, иначе текущий этаж (0 - если этаж не важен)
+function bool set_visibility(vector nav) {
+	// переменная - локальный аналог visible
+	local int vis;
+	// этаж
+	local int floor;
+	local bool changed;
+	// ставим переменной vis стандартное значение
+	// ноль останется, если дом находится очень далеко, что скажет о том, что дом надо скрыть или подгрузить LOD
+	vis = 0;
+	floor = 0;
+	// если дом не далеко
+	if (Vsize(nav)<distf) {		
+		// если мы с запада здания
+		if (nav.x < -0.5*length*lenw) vis += 2; // +00000010
+		// если мы с востока здания
+		if (nav.x > 0.5*length*lenw) vis += 4; // +00000100
+		// если мы с севера здания
+		if (nav.y > 0.5*width*widw) vis += 8; // +00001000
+		// если мы с юга здания
+		if (nav.y < -0.5*width*widw) vis += 16; // +00010000
+		// если дом очень близко
+		if (nav.z > height*heiw) {
+			if (vis == 0) {
+				vis = 62; // все стены
+			} else {
+				vis+=32;
+			}
+			// если дом очень близко
+		}
+		if (Vsize(nav)<dist1) {
+			// определяем текущий этаж
+			floor = (nav.z+30)/heiw;
+			vis+=64;
+		}
+	}
+	
+	// если нет изменений - возвращаем -1
+	if ((vis == visible)&&(!isbitb(vis,6)||floor==currentfloor)) changed = false;
+	else {
+		changed = true;
+		currentfloor = floor;
+		visible = vis;
+	}
+	return changed;
+}
+
+function getVisibleMass() {
+	local int i,j,k;
+	for (k=0;k<height;k++) {
+		for (j=0;j<width;j++) {
+			for (i=0;i<length;i++) {
+				if ((isbitb(visible,1)&&(i==0))||(isbitb(visible,2)&&(i==length-1))||(isbitb(visible,3)&&(j==width-1))||(isbitb(visible,4)&&(j==0))||(isbitb(visible,5)&&(k==height-1))||(isbitb(visible,6)&&(abs(k-currentfloor)<3)))
+				MyData2.NavigationData[i+j*length+k*length*width] = 2;
+				else
+				MyData2.NavigationData[i+j*length+k*length*width] = 0;
+			}
+		}
+	}
 }
 
 defaultproperties
@@ -309,4 +384,6 @@ defaultproperties
 	lenw = 600
 	widw = 600
 	heiw = 250
+	dist1 = 5000
+	distf = 20000
 }
