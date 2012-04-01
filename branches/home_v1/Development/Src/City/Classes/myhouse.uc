@@ -49,37 +49,17 @@ dllimport final function GetNavData2(out MyNavigationStruct NavData,out MyNaviga
 delegate GetPlayerViewPoint( out vector out_Location, out Rotator out_rotation );
 
 // -------------------------------стейты--------------------------------
-state behind {
+auto state created {
 	function CheckView() {
 		drawhouse();
-		if (distance > dist1) {
-			gotostate('far');
-		}
 	}
 	
-	Begin:
-		GetPlayerViewPoint(ViewLocation, ViewRotation);
-		distance = VSize(ViewLocation - Location);
-		//`log(distance);
-		CheckView();
-		Sleep(5.0);
-		Goto ('Begin');
-}
-
-auto state far {
-	function CheckView() {
-		drawhouse();
-		if (distance < dist1)
-			gotostate('behind');
-	}
-	
-	Begin:
-		GetPlayerViewPoint(ViewLocation, ViewRotation);
-		distance = VSize(ViewLocation - Location);
-		//`log("long:"@distance);
-		CheckView();
-		Sleep(distance*0.001);
-		Goto ('Begin');
+Begin:
+	GetPlayerViewPoint(ViewLocation, ViewRotation);
+	distance = VSize(ViewLocation - Location);
+	CheckView();
+	Sleep(5+distance*0.0001);
+	Goto ('Begin');
 }
 // ----------------------------конец стейтов-----------------------------
 
@@ -189,6 +169,7 @@ private function cell drawcell(int celll,const out vector posit,int wzpos,int wx
 	return yachejka;
 }
 
+// инициализаци€ здани€ и выделение пам€ти (координаты положени€ актЄра - угол здани€)
 function gen(Pawn locpawn,optional int len = 10,optional int wid = 10,optional int hei = 10,optional int seed = 0) {
 	length = len; width = wid; height = hei;
 	GetNavData(MyData,length,width,height,seed);
@@ -202,6 +183,7 @@ function gen(Pawn locpawn,optional int len = 10,optional int wid = 10,optional i
 	drawhouse();
 }
 
+// инициализаци€ здани€ и выделение пам€ти (координаты положени€ актЄра - центр здани€)
 function gen2(Pawn locpawn,optional int len = 10,optional int wid = 10,optional int hei = 10,optional int seed = 0) {
 	length = len; width = wid; height = hei;
 	GetNavData(MyData,length,width,height,seed);
@@ -215,6 +197,7 @@ function gen2(Pawn locpawn,optional int len = 10,optional int wid = 10,optional 
 	drawhouse();
 }
 
+// прорисовка дома
 private function drawhouse(optional bool full=false) {
 	local int i,j,k,wxpos,wypos,wzpos,celll;
 	local vector pos; // позици€ €чейки
@@ -227,27 +210,26 @@ private function drawhouse(optional bool full=false) {
 	nav.y = (Location.x-ViewLocation.x)*asin+(ViewLocation.y-Location.y)*acos;
 	nav.z = ViewLocation.z-Location.z;
 	//GetNavData2(MyData,MyData2,length,width,height,nav.x,nav.y,nav.z);
-	if (set_visibility(nav)) {
+	if (set_visibility(nav)) { // если что-то изменилось
 		getVisibleMass();
 		
 		for (k=0;k<height;k++)
 			for (j=0;j<width;j++)
 				for (i=0;i<length;i++) {
 					celll = i+j*length+k*length*width;
-					pos.x=Location.x+(lenw*i-center.x)*acos-(widw*j-center.y)*asin;
-					pos.y=Location.y+(lenw*i-center.x)*asin+(widw*j-center.y)*acos;
-					pos.z=Location.z+heiw*k;
-					wxpos = i==0?1:i==length-1?2:0; // €чейка находитс€ с краю, внутри или с другого краю?
-					wypos = j==0?1:j==width-1?2:0; // дл€ другой оси
-					wzpos = k==0?1:k==height-1?2:0; // дл€ последней оси
 					// если €чейка должна быть видима, а она скрыта
 					if ((full || (MyData2.NavigationData[celll] == 2)) && !mass[celll].visible)	{
+						pos.x=Location.x+(lenw*i-center.x)*acos-(widw*j-center.y)*asin;
+						pos.y=Location.y+(lenw*i-center.x)*asin+(widw*j-center.y)*acos;
+						pos.z=Location.z+heiw*k;
+						wxpos = i==0?1:i==length-1?2:0; // €чейка находитс€ с краю, внутри или с другого краю?
+						wypos = j==0?1:j==width-1?2:0; // дл€ другой оси
+						wzpos = k==0?1:k==height-1?2:0; // дл€ последней оси
 						// создаЄм еЄ
 						mass[celll] = drawcell(MyData.NavigationData[4+celll],pos,wzpos,wxpos,wypos,(i==MyData.NavigationData[0]&&j==MyData.NavigationData[1])||(i==MyData.NavigationData[2]&&j==MyData.NavigationData[3]));
 						// последний параметр в предыдущей строке определ€ет: находитс€ ли в €чейке лестница
-					// иначе, если €чейка должна быть скрыта, а она видима
-					} else if (!(full || (MyData2.NavigationData[celll] == 2)) && mass[celll].visible) {
-						// очищаем содержимое €чеЄки
+					} else if (!(full || (MyData2.NavigationData[celll] == 2)) && mass[celll].visible) { // иначе, если €чейка должна быть скрыта, а она видима
+						// очищаем содержимое €чейки
 						mass[celll].north.destroy();
 						mass[celll].east.destroy();
 						mass[celll].south.destroy();
@@ -265,6 +247,7 @@ private function drawhouse(optional bool full=false) {
 	}
 }
 
+// выделение пам€ти под здание
 function initialize() {
 	local int i;
 	local cell celll; // тут происходит нечто неоптимальное, если смотреть со стороны выделени€ пам€ти
@@ -353,8 +336,9 @@ function bool set_visibility(vector nav) {
 	}
 	
 	// если нет изменений - возвращаем -1
-	if ((vis == visible)&&(!isbitb(vis,6)||floor==currentfloor)) changed = false;
-	else {
+	if ((vis == visible)&&(!isbitb(vis,6)||floor==currentfloor)) {
+		changed = false;
+	} else {
 		changed = true;
 		currentfloor = floor;
 		visible = vis;
@@ -362,16 +346,23 @@ function bool set_visibility(vector nav) {
 	return changed;
 }
 
+// прописывает массив видимости в зависимости от visible
 function getVisibleMass() {
 	local int i,j,k;
-	for (k=0;k<height;k++) {
-		for (j=0;j<width;j++) {
-			for (i=0;i<length;i++) {
-				if ((isbitb(visible,1)&&(i==0))||(isbitb(visible,2)&&(i==length-1))||(isbitb(visible,3)&&(j==width-1))||(isbitb(visible,4)&&(j==0))||(isbitb(visible,5)&&(k==height-1))||(isbitb(visible,6)&&(abs(k-currentfloor)<3)))
-				MyData2.NavigationData[i+j*length+k*length*width] = 2;
-				else
-				MyData2.NavigationData[i+j*length+k*length*width] = 0;
+	if (visible!=0) {
+		for (k=0;k<height;k++) {
+			for (j=0;j<width;j++) {
+				for (i=0;i<length;i++) {
+					if ((isbitb(visible,1)&&(i==0))||(isbitb(visible,2)&&(i==length-1))||(isbitb(visible,3)&&(j==width-1))||(isbitb(visible,4)&&(j==0))||(isbitb(visible,5)&&(k==height-1))||(isbitb(visible,6)&&(abs(k-currentfloor)<3)))
+					MyData2.NavigationData[i+j*length+k*length*width] = 2;
+					else
+					MyData2.NavigationData[i+j*length+k*length*width] = 0;
+				}
 			}
+		}
+	} else {
+		for (i=0;i<length*width*height;i++) {
+			MyData2.NavigationData[i] = 0;
 		}
 	}
 }
