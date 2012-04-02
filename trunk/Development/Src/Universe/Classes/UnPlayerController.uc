@@ -4,62 +4,22 @@ var mygalaxy galaxy;
 var myhouse house;
 var bool generated,generatedh;
 
-exec function rotator UnrRot(float Pitch,float Roll,float Yaw) {
+exec function rotator UnrRot(float Pitch,float Yaw,float Roll) {
 	local rotator Rota;
 	local float DegToRot;
 	DegToRot = DegToRad*RadToUnrRot;
 	Rota.Pitch = Pitch*DegToRot;
-	Rota.Roll = Roll*DegToRot;
 	Rota.Yaw = Yaw*DegToRot;
+	Rota.Roll = Roll*DegToRot;
 	return Rota;
 }
 
-exec function message (String caption, String text, optional int type = 0) {
-	local messages mess;
-	local int a;
-	mess = new class'Base.Messages';
-	switch (type) {
-		case 0:
-			a = mess.MessBoxOK(caption,text);
-			break;
-		case 1:
-			a = mess.MessBoxYESNO(caption,text);
-			break;
-		case 2:
-			a = mess.MessBoxYESNOCANCEL(caption,text);
-			break;
-		case 3:
-			a = mess.MessBoxABORTRETRYIGNORE(caption,text);
-			break;
-		default:
-			break;
-	}
-	switch (a) {
-		case 1:
-			say("Ok");
-			break;
-		case 2:
-			say("Cancel");
-			break;
-		case 3:
-			say("Abort");
-			break;
-		case 4:
-			say("Retry");
-			break;
-		case 5:
-			say("Ignore");
-			break;
-		case 6:
-			say("Yes");
-			break;
-		case 7:
-			say("No");
-			break;
-		default:
-			say("Message return code"@a);
-			break;
-	}
+exec function vector vec(int x,int y,int z) {
+	local vector ve;
+	ve.x=x;
+	ve.y=y;
+	ve.z=z;
+	return ve;
 }
 
 exec function drawgalaxy(optional int numst = 1000) {
@@ -79,26 +39,31 @@ exec function cleargalaxy() {
 	}
 }
 
-function vector newvect(int x,int y, int z) {
-	local vector vec;
-	vec.x=x;
-	vec.y=y;
-	vec.z=z;
-	return vec;
+exec function drawhouse(optional int seed = 0) {
+	if (!generatedh) {
+		`log("start");
+		house = Spawn(class'City.myhouse',UnPawn(Owner),,vect(0,-100,-40),rot(0,0,0));
+		house.GetPlayerViewPoint = GetPlayerViewPoint;
+		house.gen2(UnPawn(Owner),4,4,4,seed+1);
+		`log("finish");
+		generatedh = true;
+	}
 }
 
-exec function drawhouse(optional int seed = 0,optional float angle=0,optional int posx = 0) {
-	`log("start");
-	house = Spawn(class'City.myhouse',UnPawn(Owner),,newvect(posx*100,0,-40),UnrRot(0,0,angle));
-	house.gen(UnPawn(Owner),4,4,4,seed+1);
-	`log("finish");
+exec function genmorehouses() {
+	local int i,j;
+	local myhouse how;
+	for (i=0;i<4;i++) {
+		for (j=0;j<4;j++) {
+			how = Spawn(class'City.myhouse',UnPawn(Owner),,vec(i*5000,j*5000,-40),UnrRot(0,0,0));
+			how.GetPlayerViewPoint = GetPlayerViewPoint;
+			how.gen2(UnPawn(Owner),5,5,10,i+j);
+		}
+	}
 }
 
-exec function drawhouse2(optional int seed = 0,optional float angle=0,optional int posx = 0) {
-	`log("start");
-	house = Spawn(class'City.myhouse',UnPawn(Owner),,newvect(posx*100,0,-40),UnrRot(0,0,angle));
-	house.gen2(UnPawn(Owner),4,4,4,seed+1);
-	`log("finish");
+exec function cosin() {
+	`log(cos(PI));
 }
 
 exec function clearhouse() {
