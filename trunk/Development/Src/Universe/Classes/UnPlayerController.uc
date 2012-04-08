@@ -1,3 +1,9 @@
+/**
+ *	UnPlayerController
+ *
+ *	Creation date: 03.01.2012 18:08
+ *	Copyright 2012, FrozenHell Skyline
+ */
 class UnPlayerController extends UTPlayerController;
 
 var mygalaxy galaxy;
@@ -62,15 +68,28 @@ exec function genmorehouses() {
 	}
 }
 
-exec function cosin() {
-	`log(cos(PI));
-}
-
 exec function clearhouse() {
 	if (generatedh) {
 		house.destroy();
 		generatedh = false;
 		say("Clearing House");
+	}
+}
+
+// нажали клавишу "Использовать"
+exec function use_actor() {
+	local Actor HitActor;
+	local vector HitNormal, HitLocation;
+	local vector ViewLocation;
+	local rotator ViewRotation;
+	GetPlayerViewPoint( ViewLocation, ViewRotation );
+	HitActor = Trace(HitLocation, HitNormal, ViewLocation + 100 * vector(ViewRotation), ViewLocation, true);
+	if (HitActor!=None) {
+		if (HitActor.IsA('UsableActor')) {
+			UsableActor(HitActor).Use(Pawn);
+		} else if (HitActor.IsA('SpeakingPawn')) {
+			SpeakingPawn(HitActor).Talk(Pawn);
+		}
 	}
 }
 
