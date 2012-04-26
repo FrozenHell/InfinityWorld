@@ -25,8 +25,8 @@ auto state minimize {
 		GetPlayerViewPoint(ViewLocation,ViewRotation);
 		for (i = 0; i<maxstars; i++) {
 			newsize = VSize(stars[i].Location-ViewLocation)*0.001;
-			/*if (newsize <= 1.0)*/ stars[i].SetDrawScale(newsize);
-			//else if (stars[i].DrawScale != 1) stars[i].SetDrawScale(1.0);
+			if (newsize <= 1.0) stars[i].SetDrawScale(newsize);
+			else if (stars[i].DrawScale != 1) stars[i].SetDrawScale(1.0);
 		}
 	}
 
