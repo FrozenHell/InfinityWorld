@@ -31,6 +31,7 @@ exec function vector vec(int x,int y,int z) {
 exec function drawgalaxy(optional int numst = 1000) {
 	if (!generated) {
 		galaxy = Spawn(class'City.mygalaxy',UnPawn(Owner),,vect(500,0,2000),rot(0,0,0));
+		galaxy.GetPlayerViewPoint = GetPlayerViewPoint;
 		generated = true;
 		say("Generated"@numst@"stars");
 	}
@@ -74,6 +75,12 @@ exec function clearhouse() {
 		generatedh = false;
 		say("Clearing House");
 	}
+}
+
+exec function gen_ps() {
+	local PlanetSystem PS1;
+	PS1 = Spawn(class'City.PlanetSystem',UnPawn(Owner),,vec(50,30,300),UnrRot(0,0,0));
+	PS1.generate(UnPawn(Owner),1);
 }
 
 // нажали клавишу "Использовать"
