@@ -8,15 +8,15 @@ var() MaterialInstanceConstant Parent_MatInst;
 // ID материала для замены InstConst материала
 var() int MatID;
 
-//Размер свечения объекта (Параметр 'Diffuse') до наводки мыши
+// Размер свечения объекта (Параметр 'Diffuse') до наводки мыши
 var() float NormalMatInstFloat;
-//Размер свечения объекта (Параметр 'Diffuse') при наводке мыши
+// Размер свечения объекта (Параметр 'Diffuse') при наводке мыши
 var() float SelectMatInstFloat;
 
-//Цвет свечения объекта (Параметр 'DiffuseColor') до наводки мыши
+// Цвет свечения объекта (Параметр 'DiffuseColor') до наводки мыши
 var() LinearColor NormalMatInstLinearColor;
 
-//Цвет свечения объекта (Параметр 'DiffuseColor') при наводке мыши
+// Цвет свечения объекта (Параметр 'DiffuseColor') при наводке мыши
 var() LinearColor SelectMatInstLinearColor;
 
 var bool selected;

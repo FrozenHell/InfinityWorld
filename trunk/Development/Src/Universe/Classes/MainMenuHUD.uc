@@ -26,6 +26,7 @@ var Vector CachedMouseWorldOrigin;
 var Vector CachedMouseWorldDirection;
 // Use ScaleForm?
 var bool UsingScaleForm;
+
 // Показывать ли курсор
 var bool drawcursor;
 // выделен ли дом

@@ -31,9 +31,9 @@ auto state minimize {
 	}
 
 begin:
-sleep(0.05);
-mini();
-goto('begin');
+	sleep(0.05);
+	mini();
+	goto('begin');
 
 }
 

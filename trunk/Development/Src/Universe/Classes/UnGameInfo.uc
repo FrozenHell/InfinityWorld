@@ -1,5 +1,9 @@
 class UnGameInfo extends UTDeathmatch;
 
+exec function createbot() {
+	spawnbot();
+}
+
 defaultproperties
 {
 	Acronym="UN"	
