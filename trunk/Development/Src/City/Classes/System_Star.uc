@@ -1,4 +1,4 @@
-class System_Star extends Actor;
+class System_Star extends ClickableActor;
 
 // разиус звезды
 var float Rad;
@@ -85,16 +85,15 @@ function initialize() {
 
 defaultProperties
 {
-	 Begin Object Class=StaticMeshComponent Name=StaticMeshCompopo
-      StaticMesh=StaticMesh'Houses.Stars.MyStar'
-			CollideActors = True
-      BlockActors = True
-      BlockRigidBody = True
-   End Object
-   Components.add(StaticMeshCompopo)
-   bHidden = False
-   bCollideActors = True
-   bBlockActors = True
-   bStatic = False
-   bMovable = False
+	Begin Object Name=StaticMeshComponent
+		StaticMesh=StaticMesh'Houses.Stars.MyStar'
+		CollideActors = True
+		BlockActors = True
+		BlockRigidBody = True
+	End Object
+	
+	Parent_MatInst = MaterialInstanceConstant'Houses.Stars.Starmat_INST'
+	MatID = 0
+	NormalMatInstLinearColor = (R=1.430000,G=0.900000,B=0.900000,A=1.000000)
+	SelectMatInstLinearColor = (R=50.615900,G=40.043331,B=20.067746,A=1.000000)
 }

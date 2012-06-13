@@ -6,15 +6,18 @@ var array<UnPlanet> mass;
 // звезда (или связанные звёзды)
 var System_Star star;
 
+// время
 var float obstime;
+
+var bool bHaveAtmosphere;
 
 state drawing {
 
 Begin:
-redrawall(obstime);
-obstime+=5000.0;
-Sleep(0.005);
-GoTo('Begin');
+	redrawall();
+	obstime+=0.001;
+	Sleep(0.01);
+	GoTo('Begin');
 }
 
 function generate(Pawn locpawn,int seed) {
@@ -25,42 +28,42 @@ function generate(Pawn locpawn,int seed) {
 	star.initialize();
 	star.SetDrawScale(star.rad/5000);
 	for (i = 0;i<4;i++) {
-		mass[i] = genplanet(locpawn,seed+i,i,0);
+		mass[i] = genplanet(locpawn,seed+i,i);
 	}
 	gotostate('drawing');
 }
 
-function UnPlanet genplanet(Pawn locpawn,int seed,int posit,float curtime) {
+function UnPlanet genplanet(Pawn locpawn,int seed,int posit) {
 	local actor locPlanet;
 	locPlanet = Spawn(class'City.UnPlanet',locpawn,,Location);
 	UnPlanet(locPlanet).initialize(posit,star.Rad,star.Mass);
-	redraw(UnPlanet(locPlanet),curtime);
-	locPlanet.SetDrawScale(UnPlanet(locPlanet).radius/5000);
+	redraw(UnPlanet(locPlanet));
+	locPlanet.SetDrawScale(UnPlanet(locPlanet).radius/7000);
 	return UnPlanet(locPlanet);
 }
 
-function redrawall(float curtime) {
+function redrawall() {
 	local int i;
 	for (i = 0;i<4;i++) {
-		redraw(mass[i],curtime);
+		redraw(mass[i]);
 	}
 }
 
-function redraw(UnPlanet locPlanet,float curtime) {
+function redraw(UnPlanet locPlanet) {
 	local float rad,ex,f,ro,timeang;
 	local vector locpos;
 	rad = locPlanet.rad;
 	timeang = locPlanet.timeang;
 	ex = locPlanet.ex;
-	f = curtime*2*3.1415/timeang;
+	f = obstime*1000*2*3.1415/timeang;
 	ro=rad/(1-ex*cos(f));
 	locpos.x=(((2*ex*rad)/(1-ex*ex))-(ro*cos(f)));
 	locpos.y=(ro*sin(f));
-	locpos/=5000;
+	locpos/=7000;
 	locPlanet.SetLocation(Location+locpos);
 }
 
 defaultProperties
 {
-obstime = 0.0
+	obstime = 10000000.0
 }

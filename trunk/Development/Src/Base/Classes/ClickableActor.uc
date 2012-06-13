@@ -35,7 +35,6 @@ function Select( bool b) {
 		Material_MatInst.SetScalarParameterValue ('Diffuse', NormalMatInstFloat);
 		Material_MatInst.SetVectorParameterValue('DiffuseColor', NormalMatInstLinearColor);
 	}
-	`log("ololo");
 }
 
 function change() {

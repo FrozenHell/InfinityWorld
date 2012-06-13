@@ -1,4 +1,4 @@
-class UnPlanet extends Actor;
+class UnPlanet extends ClickableActor;
 
 var float ex;
 var float rad;
@@ -6,7 +6,7 @@ var float timeang;
 var float mass;
 var float radius;
 
-function initialize(int pos, float rS, float massS) { // rS - радиус звезды
+function initialize(int pos, float rS, float massS) { // rS - радиус звезды, massS - масса звезды
 	local int type;
 	type = Rand(3)+1; // земля, гигант, нептун
 	switch (type) {
@@ -30,16 +30,24 @@ function initialize(int pos, float rS, float massS) { // rS - радиус звезды
 
 defaultProperties
 {
-	Begin Object Class=StaticMeshComponent Name=StaticMeshCompopo
-		StaticMesh=StaticMesh'Houses.Planets.Planet2'
+	Begin Object Name=StaticMeshComponent
+		StaticMesh=StaticMesh'Houses.Planets.Planet1'
 		CollideActors = True
 		BlockActors = True
 		BlockRigidBody = True
 	End Object
-	Components.add(StaticMeshCompopo)
-	bHidden = False
-	bCollideActors = True
-	bBlockActors = True
-	bStatic = False
-	bMovable = True
+	Components.add(StaticMeshComponent)
+	
+	Begin Object Class=StaticMeshComponent Name=StaticMeshComponent2
+		StaticMesh=StaticMesh'Houses.Planets.PlanetAtmosphere'
+		CollideActors = True
+		BlockActors = True
+		BlockRigidBody = True
+	End Object
+	Components.add(StaticMeshComponent2)
+
+	Parent_MatInst = MaterialInstanceConstant'Houses.Planets.Atmosphere1_INST'
+	MatID = 0
+	NormalMatInstLinearColor = (R=0.242034,G=0.190995,B=0.880435,A=1.000000)
+	SelectMatInstLinearColor = (R=24.2034,G=19.0995,B=88.0435,A=1.000000)
 }
