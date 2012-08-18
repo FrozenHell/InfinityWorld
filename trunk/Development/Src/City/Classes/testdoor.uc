@@ -1,4 +1,4 @@
-class testdoor extends housepart;
+class TestDoor extends housepart;
 
 defaultProperties
 {

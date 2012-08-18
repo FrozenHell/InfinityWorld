@@ -1,4 +1,4 @@
-class teststair extends housepart;
+class TestStair extends housepart;
 
 defaultProperties
 {

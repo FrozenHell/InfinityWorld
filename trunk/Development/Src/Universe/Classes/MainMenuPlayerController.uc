@@ -3,14 +3,14 @@ class MainMenuPlayerController extends PlayerController;
 // Mouse event enum
 enum EMouseEvent
 {
-	LeftMouseButton,
-	RightMouseButton,
-	MiddleMouseButton,
-	ScrollWheelUp,
-	ScrollWheelDown
+	ME_LeftMouseButton,
+	ME_RightMouseButton,
+	ME_MiddleMouseButton,
+	ME_ScrollWheelUp,
+	ME_ScrollWheelDown
 };
 
-enum ModelPart {
+enum EModelPart {
 	MP_Galaxy,
 	MP_System,
 	MP_Planet,
@@ -18,13 +18,15 @@ enum ModelPart {
 };
 
 // вращаем ли мы камеру
-var bool mirotate;
+var bool bRotation;
+
+var vector TestTest;
 
 // текущий объект
 var ClickableActor currentevent;
 
 // галактика
-var mygalaxy CurrGalax;
+var MyGalaxy CurrGalax;
 
 // текущая звёздная система
 var PlanetSystem CurrSyst;
@@ -36,22 +38,22 @@ var UnPlanet CurrPlan;
 var vector ViewPoint;
 
 // новая точка фокуса, в которую производится плавный переход
-var vector NewTPos;
+var vector NewFocusPos;
 
 // новый актёр для слежения
-var Actor NewTAct;
+var Actor NewFocusAct;
 
 // время перехода камеры
-var float DMoveTime;
+var float DeltaMoveTime;
 
 // текущее время от начала перехода
 var float MoveTime;
 
 // время на один шаг
-var float DTime;
+var float DeltaTime;
 
 // шаг движения точки фокуса камеры
-var float delta;
+var float Delta;
 
 // расстояние, на котором находится камера
 var float CameraRange;
@@ -60,230 +62,288 @@ var float CameraRange;
 var rotator CameraAngle;
 
 // текущий вид (галактика, звезда, планета, спутник)
-var ModelPart CurrentView;
+var EModelPart CurrentView;
 
 // Override this state because StartFire isn't called globally when in this function
-auto state PlayerWaiting {
+auto state PlayerWaiting
+{
 	
-	exec function StartFire(optional byte FireModeNum)
+	exec function StartFire(optional byte fireModeNum)
 	{
-		Global.StartFire(FireModeNum);
+		Global.StartFire(fireModeNum);
 	}
 	
-	function PlayerMove( float DeltaTime ) {
-		UpdateRotation(DeltaTime);
+	function PlayerMove(float fDeltaTime)
+	{
+		UpdateRotation(fDeltaTime);
 	}
 	
-	function bool UpdTPos() {
-		// двигаем на скалярную величину (или делаем последний точный шаг)
-		ViewPoint+= VSize(NewTPos-ViewPoint)>delta?Normal(NewTPos-ViewPoint)*delta:NewTPos-ViewPoint;
+	function bool UpdCamToFocusPos()
+	{
+		if (VSize(NewFocusPos - ViewPoint) > Delta)
+			ViewPoint += Normal(NewFocusPos - ViewPoint) * Delta; // двигаем на скалярную величину
+		else
+			ViewPoint += NewFocusPos - ViewPoint; // последний шаг
+		
 		// обновляем позицию камеры
-		updcamrot();
-		return ViewPoint == NewTPos;
+		UpdCamRot();
+		return ViewPoint == NewFocusPos;
 	}
 	
-	function bool UpdTActPos() {
-		// двигаем на скалярную величину (или делаем последний точный шаг)
-		ViewPoint+= VSize(NewTAct.Location-ViewPoint)>delta?Normal(NewTAct.Location-ViewPoint)*delta:NewTAct.Location-ViewPoint;
+	// движение камеры к актёру
+	function bool UpdCamToFocusActPos()
+	{
+		if (VSize(NewFocusAct.Location - ViewPoint) > Delta)
+			ViewPoint += Normal(NewFocusAct.Location - ViewPoint) * Delta; // двигаем на скалярную величину
+		else
+			ViewPoint += NewFocusAct.Location - ViewPoint; // делаем последний точный шаг
 		// обновляем позицию камеры
-		updcamrot();
-		return VSize(NewTAct.Location-ViewPoint)<delta;
+		UpdCamRot();
+		return VSize(NewFocusAct.Location-ViewPoint) < Delta;
 	}
 	
 Begin:
 	MainMenuHUD(myHUD).PickHouse = PickHouse;
+	SetLocation(vect(0, 0, 10000));
+	SetRotation(UnrRot(-90, 0, 0));
 	GoTo('EndAll');
 
 // переходим к виду на планету
 WatchPlanet:
 	if (CurrentView != MP_Planet) GoTo('EndAll');
 	ViewPoint = CurrPlan.Location;
-	updcamrot();
+	UpdCamRot();
 	Sleep(0.04);
 	GoTo('WatchPlanet');
 
 // плавно меняем положение цели камеры затем переходя на обзор планеты	
 ChangePlanet:
-	DMoveTime = 3;
-	DTime = 0.05;
-	delta = VSize(NewTAct.Location-ViewPoint)*DTime/DMoveTime;
+	DeltaMoveTime = 3;
+	DeltaTime = 0.05;
+	Delta = VSize(NewFocusAct.Location - ViewPoint) * DeltaTime / DeltaMoveTime;
 ChangePlanetCyc:
-	Sleep(DTime);
+	Sleep(DeltaTime);
 	// достигли ли нужной точки
-	if (UpdTActPos()) GoTo('WatchPlanet');
+	if (UpdCamToFocusActPos()) GoTo('WatchPlanet');
 	GoTo('ChangePlanetCyc');
 
 // плавно меняем положение цели камеры
 MoveTCam:
-	DMoveTime = 3;
-	DTime = 0.05;
-	delta = VSize(NewTPos-ViewPoint)*DTime/DMoveTime;
+	DeltaMoveTime = 3;
+	DeltaTime = 0.05;
+	Delta = VSize(NewFocusPos - ViewPoint) * DeltaTime / DeltaMoveTime;
 MoveTCamCyc:
-	Sleep(DTime);
+	Sleep(DeltaTime);
 	// достигли ли нужной точки
-	if (UpdTPos()) GoTo('EndAll');
+	if (UpdCamToFocusPos()) GoTo('EndAll');
 	GoTo('MoveTCamCyc');
 
 EndAll:
 
 }
 
+function rotator UnrRot(float pitch,float yaw,float roll)
+{
+	local rotator rota;
+	local float DegToRot;
+	DegToRot = DegToRad*RadToUnrRot;
+	rota.Pitch = pitch*DegToRot;
+	rota.Yaw = yaw*DegToRot;
+	rota.Roll = roll*DegToRot;
+	return rota;
+}
+
 // создаём галактику
-exec function initgalaxy(optional int numst = 10000) {
-	if ((CurrGalax) == None) {
-		CurrGalax = Spawn(class'City.mygalaxy',Pawn(Owner),,vect(0,0,0),rot(0,0,0));
+exec function InitGalaxy(optional int numStars = 10000)
+{
+	if ((CurrGalax) == None)
+	{
+		// создаём объект - галактику
+		CurrGalax = Spawn(class'City.mygalaxy', Pawn(Owner),, vect(0, 0, 0), rot(0, 0, 0));
+		// передаём ссылку на функцию
 		CurrGalax.GetPlayerViewPoint = GetPlayerViewPoint;
-		//say("Generated"@numst@"stars");
-		CurrGalax.gen(Pawn(Owner),numst);
+		// переключаем галактику в режим космоса
+		//CurrGalax.Cosmos = true;
+		// заполняем галактику звёздами в количестве numStars
+		CurrGalax.gen(Pawn(Owner), numStars);
 	}
-	SetRotation(rot(0,10000,0));
-	updcamrot();
+	UpdCamRot();
 }
 
 // функция вызывается из Hud-а
-function PickHouse(ClickableActor clicableevent) {
-	if (currentevent != None) currentevent.select(false);
+function PickHouse(ClickableActor clicableevent)
+{
+	if (currentevent != None)
+		currentevent.select(false);
 	currentevent = clicableevent;
-	if (currentevent != None) currentevent.select(true);
+	if (currentevent != None)
+		currentevent.select(true);
 }
 
 // пытаемся повернуть камеру
-function UpdateRotation(float DeltaTime) {
-	local Rotator	DeltaRot, ViewRotation;
+/*function UpdateRotation(float fDeltaTime)
+{
+	local Rotator	deltaRot, viewRotation;
 	// если мы в режиме вращения камеры
-	if (mirotate) {
+	if (bRotation)
+	{
 		// вычисляем дельту поворота
-		DeltaRot.Yaw	= PlayerInput.aTurn;
-		DeltaRot.Pitch	= PlayerInput.aLookUp;
-		ViewRotation = CameraAngle;
-		// поворачиваем вектор ViewRotation на дельту
-		ProcessViewRotation( DeltaTime, ViewRotation, DeltaRot );
+		deltaRot.Yaw	= PlayerInput.aTurn;
+		deltaRot.Pitch	= PlayerInput.aLookUp;
+		viewRotation = CameraAngle;
+		// поворачиваем вектор viewRotation на дельту
+		ProcessViewRotation(fDeltaTime, viewRotation, deltaRot);
 		// полученный вектор записываем в CameraAngle
-		CameraAngle = ViewRotation;
+		CameraAngle = viewRotation;
 		// применяем поворот к камере
-		SetRotation(ViewRotation);
-		ViewShake( deltaTime );
+		SetRotation(viewRotation);
+		ViewShake(fDeltaTime);
 		// обновляем положение камеры
-		updcamrot();
+		UpdCamRot();
 	}
+}*/
+
+function UpdateRotation(float fDeltaTime)
+{
+	//local Rotator	viewRotation;
+	//local vector locvec;
+	// если мы в режиме вращения камеры
+	if (bRotation)
+	{
+		// вычисляем дельту поворота
+		TestTest.y = ((TestTest.y - PlayerInput.aLookUp / 1000 > 0.0) ? 0.0 : (TestTest.y - PlayerInput.aLookUp / 1000 < -3.14) ? -3.14 : TestTest.y - PlayerInput.aLookUp / 1000);
+		//CurrGalax.RotateGf(0, TestTest.y, TestTest.x += PlayerInput.aTurn / 1000);
+	}
+}
+
+// принудительное обновление камеры
+function UpdCamRot()
+{
+	local vector cameraPos;
+	local rotator viewRotation;
+	
+	viewRotation = CameraAngle;
+	// направляем будущий вектор вниз
+	viewRotation.Pitch = 0;
+	// ищем орт векторного произведения
+	cameraPos = Normal(CameraAngle.Pitch > PI * RadToUnrRot ? vector(viewRotation) Cross vector(CameraAngle) : vector(CameraAngle) Cross vector(viewRotation));
+	// ищем новое положение камеры
+	SetLocation(ViewPoint + vector(CameraAngle) * -CameraRange + cameraPos * CameraRange * 0.3);  // 0.3 - соотношение CameraRange и вектора сдвигающего камеру вбок. В зависимости от разрешения экрана и FOV может быть разным
 }
 
 // изменяем расстояние камеры
 function ChCamRange(int inc, optional bool mult = false) {
-	local int newrange, maxrange, minrange;
-	maxrange = 20000;
-	minrange = 1000;
+	local int newRange, maxRange, minRange;
+	maxRange = 20000;
+	minRange = 1000;
 	newrange = mult ? CameraRange * inc : CameraRange + inc;
-	if (newrange>minrange && newrange<maxrange) CameraRange = newrange;
+	if (newRange > minRange && newRange < maxRange)
+		CameraRange = newRange;
 }
 
-// принудительное обновление камеры
-function updcamrot() {
-	local vector CameraPos;
-	local rotator ViewRotation;
-	
-	ViewRotation = CameraAngle;
-	// направляем будущий вектор вниз
-	ViewRotation.Pitch = 0;
-	// ищем орт векторного произведения
-	CameraPos = Normal( CameraAngle.Pitch>PI*RadToUnrRot ? vector(ViewRotation) Cross vector(CameraAngle) : vector(CameraAngle) Cross vector(ViewRotation) );
-	// ищем новое положение камеры
-	SetLocation(ViewPoint + vector(CameraAngle)* -CameraRange + CameraPos*CameraRange * 0.3);  // 0.3 - соотношение CameraRange и вектора сдвыгающего камеру вбок. В зависимости от разрешения экрана и FOV может быть разным
-}
 
 // кликнули по объекту
-function ClickToAct(ClickableActor ClAct) {
-	if ((ministar(ClAct) != None)&&(CurrentView == MP_Galaxy)) { // звезда в галактике
+function ClickToAct(ClickableActor clAct)
+{
+	if (ministar(clAct) != None && CurrentView == MP_Galaxy) // звезда в галактике
+	{
 		CurrentView = MP_System;
+		//CurrGalax.MoveGf(-clAct.Location);
 		CurrGalax.ZoomIn();
 		//CurrGalax.destroy();
-		//CurrSyst = Spawn(class'City.PlanetSystem',UnPawn(Owner),,ViewPoint,Rot(0,0,0));
+		//CurrSyst = Spawn(class'City.PlanetSystem', UnPawn(Owner),, ViewPoint, Rot(0, 0, 0));
 		//CurrSyst.generate(UnPawn(Owner),1);
-	} else if (System_Star(ClAct) != None) { // звезда в системе
-		NewTPos = ClAct.Location;
-		CurrentView = MP_System;
-		GoToState('PlayerWaiting','MoveTCam');
-	} else if (UnPlanet(ClAct) != None) { // планета в системе
-		CurrentView = MP_Planet;
-		NewTAct = ClAct;
-		CurrPlan = UnPlanet(ClAct);
-		GoToState('PlayerWaiting','ChangePlanet');
 	}
-	updcamrot();
+	else if (System_Star(clAct) != None) // звезда в системе
+	{
+		NewFocusPos = clAct.Location;
+		CurrentView = MP_System;
+		GoToState('PlayerWaiting', 'MoveTCam');
+	}
+	else if (UnPlanet(clAct) != None)  // планета в системе
+	{
+		CurrentView = MP_Planet;
+		NewFocusAct = clAct;
+		CurrPlan = UnPlanet(clAct);
+		GoToState('PlayerWaiting', 'ChangePlanet');
+	}
+	
+	UpdCamRot();
 }
 
 // Handle mouse inputs
-function HandleMouseInput(EMouseEvent MouseEvent, EInputEvent InputEvent)
+function HandleMouseInput(EMouseEvent mouseEvent, EInputEvent inputEvent)
 {
-	local MainMenuHUD MainMenuHUD;
+	local MainMenuHUD mainMenuHUD;
 	
 	// Type cast to get our HUD
-	MainMenuHUD = MainMenuHUD(myHUD);
-	if (MainMenuHUD != None)
+	mainMenuHUD = mainMenuHUD(myHUD);
+	if (mainMenuHUD != None)
 	{
 		// Detect what kind of input this is
-		if (InputEvent == IE_Pressed)
+		if (inputEvent == IE_Pressed)
 		{
 			// Handle pressed event
-			switch (MouseEvent)
+			switch (mouseEvent)
 			{
-			case LeftMouseButton:
-				// ЛКМ нажата
-				
-				// если кликнули по ClickableActor
-				if (currentevent != None) {
-					// выделить его цветом
-					ClickToAct(currentevent);
-				}
-				break;
+				case ME_LeftMouseButton:
+					// ЛКМ нажата
+					
+					// если кликнули по ClickableActor
+					if (currentevent != None)
+					{
+						// выделить его цветом
+						ClickToAct(currentevent);
+					}
+					break;
 
-			case RightMouseButton:
-				// ПКМ нажата
-				mirotate = true;
-				MainMenuHUD(myHUD).drawcursor = false;
-				break;
+				case ME_RightMouseButton:
+					// ПКМ нажата
+					bRotation = true;
+					mainMenuHUD(myHUD).drawcursor = false;
+					break;
 
-			case MiddleMouseButton:
-				// СКМ нажата
-				break;
+				case ME_MiddleMouseButton:
+					// СКМ нажата
+					break;
 
-			case ScrollWheelUp:
-				// колёсико вверх
-				ChCamRange(-1000);
-				updcamrot();
-				break;
+				case ME_ScrollWheelUp:
+					// колёсико вверх
+					ChCamRange(-1000);
+					UpdCamRot();
+					break;
 
-			case ScrollWheelDown:
-				// колёсико вниз
-				ChCamRange(1000);
-				updcamrot();
-				break;
+				case ME_ScrollWheelDown:
+					// колёсико вниз
+					ChCamRange(1000);
+					UpdCamRot();
+					break;
 
-			default:
-				break;
+				default:
+					break;
 			}
 		}
-		else if (InputEvent == IE_Released)
+		else if (inputEvent == IE_Released)
 		{
 			// Handle released event
-			switch (MouseEvent)
+			switch (mouseEvent)
 			{
-			case LeftMouseButton:
-				// ЛКМ отпущена
-				break;
+				case ME_LeftMouseButton:
+					// ЛКМ отпущена
+					break;
 
-			case RightMouseButton:
-				// ПКМ отпущена
-				mirotate = false;
-				MainMenuHUD(myHUD).drawcursor = true;
-				break;
+				case ME_RightMouseButton:
+					// ПКМ отпущена
+					bRotation = false;
+					MainMenuHUD(myHUD).drawcursor = true;
+					break;
 
-			case MiddleMouseButton:
-				// СКМ отпущена
-				break;
+				case ME_MiddleMouseButton:
+					// СКМ отпущена
+					break;
 
-			default:
-				break;
+				default:
+					break;
 			}
 		}
 	}
@@ -293,41 +353,41 @@ function HandleMouseInput(EMouseEvent MouseEvent, EInputEvent InputEvent)
 // ------------- служебные функции перехватывающие команды мыши -------------
 
 // Hook used for the left and right mouse button when pressed
-exec function StartFire(optional byte FireModeNum)
+exec function StartFire(optional byte fireModeNum)
 {
-	HandleMouseInput((FireModeNum == 0) ? LeftMouseButton : RightMouseButton, IE_Pressed);
-	Super.StartFire(FireModeNum);
+	HandleMouseInput((fireModeNum == 0) ? ME_LeftMouseButton : ME_RightMouseButton, IE_Pressed);
+	Super.StartFire(fireModeNum);
 }
 
 // Hook used for the left and right mouse button when released
-exec function StopFire(optional byte FireModeNum)
+exec function StopFire(optional byte fireModeNum)
 {
-	HandleMouseInput((FireModeNum == 0) ? LeftMouseButton : RightMouseButton, IE_Released);
-	Super.StopFire(FireModeNum);
+	HandleMouseInput((fireModeNum == 0) ? ME_LeftMouseButton : ME_RightMouseButton, IE_Released);
+	Super.StopFire(fireModeNum);
 }
 
 // Called when the middle mouse button is pressed
 exec function MiddleMousePressed()
 {
-	HandleMouseInput(MiddleMouseButton, IE_Pressed);
+	HandleMouseInput(ME_MiddleMouseButton, IE_Pressed);
 }
 
 // Called when the middle mouse button is released
 exec function MiddleMouseReleased()
 {
-	HandleMouseInput(MiddleMouseButton, IE_Released);
+	HandleMouseInput(ME_MiddleMouseButton, IE_Released);
 }
 
 // Called when the middle mouse wheel is scrolled up
 exec function MiddleMouseScrollUp()
 {
-	HandleMouseInput(ScrollWheelUp, IE_Pressed);
+	HandleMouseInput(ME_ScrollWheelUp, IE_Pressed);
 }
 
 // Called when the middle mouse wheel is scrolled down
 exec function MiddleMouseScrollDown()
 {
-	HandleMouseInput(ScrollWheelDown, IE_Pressed);
+	HandleMouseInput(ME_ScrollWheelDown, IE_Pressed);
 }
 
 // ------------- конец служебных функций -------------
@@ -339,6 +399,6 @@ defaultproperties
   InputClass=class'MainMenuPlayerInput'
 	CurrentView = MP_Galaxy
 	CameraRange = 10000
-	mirotate = false
+	bRotation = false
 	Name="Default__MainMenuPlayerController"
 }

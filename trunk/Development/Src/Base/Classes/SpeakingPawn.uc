@@ -6,7 +6,8 @@
  */
 class SpeakingPawn extends UTPawn; // надо будет наследовать от другого класса
 
-public function Talk(Pawn uInstigator) {
+public function Talk(Pawn uInstigator)
+{
 	`log(Name@"был потревожен");
 }
 

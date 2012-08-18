@@ -19,32 +19,37 @@ var() float AtackRange;
 var const float MaxMeleeRange;
 
 // тип атаки (изменить или убрать)
-enum BotAtackType {
-	ATT_Melee,						// только ближний бой
-	ATT_RunAttack,				// подбег на определённой расстояние и атака
-	ATT_AttackRunAttack,	// бег -> стрельба -> бег -> .. пока не подбежит на определённое расстояние, затем обычная атака
-	ATT_AttackRunMelee,		// бег -> стрельба -> бег -> .. пока не подбежит в упор, затем ближняя атака
-	ATT_StandAttack				// атака стоя на месте спауна
+enum EBotAtackType
+{
+	BAT_Melee,						// только ближний бой
+	BAT_RunAttack,				// подбег на определённой расстояние и атака
+	BAT_AttackRunAttack,	// бег -> стрельба -> бег -> .. пока не подбежит на определённое расстояние, затем обычная атака
+	BAT_AttackRunMelee,		// бег -> стрельба -> бег -> .. пока не подбежит в упор, затем ближняя атака
+	BAT_StandAttack				// атака стоя на месте спауна
 };
 
 // агрессивность
 var	float Aggressiveness;
 
-var() BotAtackType AtackType;
+var() EBotAtackType AtackType;
 
 // -----------------конец объявления переменных---------------------
 
 
 // начальное состояние - состояние покоя
-auto State Idle {
+auto State Idle
+{
 
 Begin:
 	// назначаем врагом игрока
-	if (Enemy == None) {
+	if (Enemy == None)
+	{
 		Player = SearchPlayer();
 		SetEnemy(Player);
 		StartEnemyAtack();
-	} else if (Enemy == SearchPlayer()) {
+	}
+	else if (Enemy == SearchPlayer())
+	{
 		StartEnemyAtack();
 	}
 	Sleep(5);
@@ -52,11 +57,13 @@ Begin:
 }
 
 // состояние атаки
-State Atack {
+State Atack
+{
 	ignores SeePlayer,SeeMonster,TakeDamage,HearNoise;
 	
 	// отключение стрельбы через интеревалы
-	function TimerFiring() {
+	function TimerFiring()
+	{
 		StopShootWeapon(0);
 	}
 	
@@ -65,8 +72,10 @@ Begin:
 	
 GivePain:
 	// враг существует?
-	if (Enemy!=none) {
-		if (!Enemy.IsAliveAndWell())	{
+	if (Enemy!=none)
+	{
+		if (!Enemy.IsAliveAndWell())
+		{
 			// враг мёртв
 			StopShootWeapon(0); // хватит стрелять
 			GotoState('Idle'); // переходим в состояние покоя
@@ -78,23 +87,26 @@ GivePain:
 	}
 	
 	// действуем в зависимости от выбранного типа атаки
-	switch (AtackType) {
-		case ATT_Melee:
+	switch (AtackType)
+	{
+		case BAT_Melee:
 			// подбежать в упор
 			MoveToward(Enemy, Enemy, MaxMeleeRange-50,, true);
 			// прибежали?
-			if (VSize(Pawn.Location - Enemy.Location)<MaxMeleeRange) {
+			if (VSize(Pawn.Location - Enemy.Location)<MaxMeleeRange)
+			{
 				// нанести удар
 				ShootWeapon(0);
 				// задержка после выстрела
 				SetTimer(1,false,'TimerFiring'); // 1 - задержка
 			}
 			break;
-		case ATT_RunAttack:
+		case BAT_RunAttack:
 			// бежать на расстояние огня
 			MoveToward(Enemy, Enemy, AtackRange-100,, true);
 			// достигли расстояния для выстрела
-			if (VSize(Pawn.Location - Enemy.Location)<AtackRange) { // добавить проверку на видимость игрока
+			if (VSize(Pawn.Location - Enemy.Location)<AtackRange)
+			{ // добавить проверку на видимость игрока
 				// нанести удар
 				TakeFocus(Enemy);
 				ShootWeapon(0);
@@ -103,13 +115,13 @@ GivePain:
 				//SetTimer(1,false,'TimerFiring'); // 1 - задержка
 			}
 			break;
-		case ATT_AttackRunAttack:
+		case BAT_AttackRunAttack:
 			
 			break;
-		case ATT_AttackRunMelee:
+		case BAT_AttackRunMelee:
 			
 			break;
-		case ATT_StandAttack:
+		case BAT_StandAttack:
 			
 			break;
 	}
@@ -121,66 +133,79 @@ GivePain:
 
 
 // инициализация контроллера
-simulated event PostBeginPlay() {
+simulated event PostBeginPlay()
+{
 	super.PostBeginPlay();
 }
 
 // бот слышит шум
-event HearNoise( float Loudness, Actor NoiseMaker, optional Name NoiseType ) {
+event HearNoise(float Loudness, Actor NoiseMaker, optional Name NoiseType)
+{
 	//StartEnemyAtack();
 }
 
 // бот видит игрока
-event SeePlayer(Pawn Seen) {
-	
+event SeePlayer(Pawn seen)
+{
 	// если игрок - враг
-	if (Seen==Enemy)	{
+	if (seen == Enemy)
+	{
 		StartEnemyAtack();
 	}
 }
 
 // поиск игрока
-function Pawn SearchPlayer() {
-	local Pawn PW;
-	foreach AllActors(class'Pawn',PW) {
-		if (PW.IsPlayerPawn()) {
-			return PW;
+function Pawn SearchPlayer()
+{
+	local Pawn localPawn;
+	foreach AllActors(class'Pawn', localPawn)
+	{
+		if (localPawn.IsPlayerPawn())
+		{
+			return localPawn;
 		}
 	}
 	return None; // игрок не найден
 }
 
 // назначение боту врага
-function SetEnemy(Pawn P) {
-	if (Enemy==None || Enemy!=P) {
-		Enemy=P;
+function SetEnemy(Pawn P)
+{
+	if (Enemy == None || Enemy != P)
+	{
+		Enemy = P;
 	}
 }
 
 // прицеливание
-function TakeFocus(Pawn P) {
-	Pawn.SetViewRotation(rotator(P.Location-Pawn.Location));
+function TakeFocus(Pawn P)
+{
+	Pawn.SetViewRotation(rotator(P.Location - Pawn.Location));
 }
 
 // старт атаки
-function StartEnemyAtack() {
+function StartEnemyAtack()
+{
 	//`log(name@"StartAtack()");
 	// атаковать
 	GoToState('Atack');
 }
 
 // прекращение атаки
-function StopEnemyAtack() {
+function StopEnemyAtack()
+{
 	GoToState('Idle');
 }
 
 // выстрелить из оружия (или ударить ближним боем)
-function ShootWeapon(optional byte FireType=0) { // FireType - тип атаки (для UnrealTournament аналогично ЛКМ и ПКМ)
+function ShootWeapon(optional byte FireType = 0) // FireType - тип атаки (для UnrealTournament аналогично ЛКМ и ПКМ)
+{
 	Pawn.StartFire(FireType);
 }
 
 // прекратить огонь
-function StopShootWeapon(optional byte FireType=0) {
+function StopShootWeapon(optional byte FireType = 0)
+{
 	Pawn.StopFire(FireType);
 }
 
@@ -189,6 +214,6 @@ defaultproperties
 	AtackRange = 1000
 	MaxMeleeRange = 100
 	WaitAttack = 1
-	AtackType = ATT_Melee
+	AtackType = BAT_Melee
 	Name="AngryBotsController__"
 }

@@ -1,4 +1,4 @@
-class testroofgrain extends housepart;
+class TestRoofGrain extends housepart;
 
 defaultProperties
 {

@@ -1,4 +1,4 @@
-class ministar extends ClickableActor;
+class MiniStar extends ClickableActor;
 
 defaultProperties
 {
@@ -8,7 +8,7 @@ defaultProperties
 		BlockActors = True
 		BlockRigidBody = True
 	End Object
-	Components.add(StaticMeshComponent)
+	Components.Add(StaticMeshComponent)
 	
 	Parent_MatInst = MaterialInstanceConstant'Houses.Stars.Starmat_INST'
 	MatID = 0

@@ -1,4 +1,4 @@
-class testgrain extends housepart;
+class TestGrain extends housepart;
 
 defaultProperties
 {

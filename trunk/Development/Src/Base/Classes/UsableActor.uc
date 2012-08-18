@@ -9,7 +9,8 @@ class UsableActor extends Actor
 
 var() const editconst StaticMeshComponent	StaticMeshComponent;
 
-public function Use(Pawn uInstigator) {
+public function Use(Pawn uInstigator)
+{
 	`log(Name@"был использован");
 	PlaySound(SoundCue'A_Gameplay.Gameplay.MessageBeepCue', true);
 }

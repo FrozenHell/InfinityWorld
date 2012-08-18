@@ -1,8 +1,9 @@
 class MyTestActor extends Actor;
 
-auto state Autostate{
+auto state Autostate
+{
 Begin:
-`log("I'm live!!");
+	`log("I'm live!!");
 }
 
 defaultProperties

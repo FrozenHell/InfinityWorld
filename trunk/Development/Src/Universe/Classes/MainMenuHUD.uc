@@ -28,24 +28,28 @@ var Vector CachedMouseWorldDirection;
 var bool UsingScaleForm;
 
 // ѕоказывать ли курсор
-var bool drawcursor;
+var bool DrawCursor;
 // выделен ли дом
-var bool bpickhouse;
+var bool bPickHouse;
 
 delegate PickHouse(ClickableActor clicablehouse);
 
-event PostRender() {
+event PostRender()
+{
   local MainMenuPlayerInput MainMenuPlayerInput;
-	local ClickableActor thisactor;
+	local ClickableActor thisActor;
 
 	// если мы не в режиме вращени€ камеры
-	if (drawcursor) {
+	if (DrawCursor)
+	{
 		// Ensure that we have a valid PlayerOwner and CursorTexture
-		if (PlayerOwner != None && CursorTexture != None) {
+		if (PlayerOwner != None && CursorTexture != None)
+		{
 			// Cast to get the MainMenuPlayerInput
 			MainMenuPlayerInput = MainMenuPlayerInput(PlayerOwner.PlayerInput); 
 
-			if (MainMenuPlayerInput != None) {
+			if (MainMenuPlayerInput != None)
+			{
 				// Set the canvas position to the mouse position
 				Canvas.SetPos(MainMenuPlayerInput.MousePosition.X, MainMenuPlayerInput.MousePosition.Y); 
 				// Set the cursor color
@@ -55,21 +59,26 @@ event PostRender() {
 			}
 		}
 		// провер€ем, видим ли мы дом
-		thisactor = GetMouseActor();
-		if (thisactor != None) {
-			if (!bpickhouse) {
-				bpickhouse = true;
+		thisActor = GetMouseActor();
+		if (thisActor != None)
+		{
+			if (!bPickHouse)
+			{
+				bPickHouse = true;
 				PickHouse(thisactor);
 				//`log("я вижу дом");
 			}
-		} else if (bpickhouse) {
-			bpickhouse = false;
+		}
+		else if (bpickhouse)
+		{
+			bPickHouse = false;
 			PickHouse(None);
 			//`log("я не вижу дом");
 		}
-	} else if (bpickhouse) { // если мы в режиме вращени€ камеры и дом выделен
+	}
+	else if (bpickhouse) { // если мы в режиме вращени€ камеры и дом выделен
 		// снимаем выделение с дома
-		bpickhouse = false;
+		bPickHouse = false;
 		PickHouse(None);
 		//`log("я ничего не вижу");
 	}
@@ -84,7 +93,8 @@ function ClickableActor GetMouseActor(optional out Vector HitLocation, optional 
 	local ClickableActor thisactor;
 
 	// Ensure that we have a valid canvas and player owner
-	if (Canvas == None || PlayerOwner == None) {
+	if (Canvas == None || PlayerOwner == None)
+	{
 		return None;
 	}
 
@@ -92,7 +102,8 @@ function ClickableActor GetMouseActor(optional out Vector HitLocation, optional 
 	MainMenuPlayerInput = MainMenuPlayerInput(PlayerOwner.PlayerInput);
 
 	// Ensure that the player input is valid
-	if (MainMenuPlayerInput == None) {
+	if (MainMenuPlayerInput == None)
+	{
 		return None;
 	}
 
@@ -125,7 +136,8 @@ function Vector GetMouseWorldLocation() {
   local Vector MouseWorldOrigin, MouseWorldDirection, HitLocation, HitNormal;
 
   // Ensure that we have a valid canvas and player owner
-  if ( Canvas == None ||  PlayerOwner == None) {
+  if ( Canvas == None ||  PlayerOwner == None)
+	{
     return Vect(0, 0, 0);
   }
 	
@@ -133,7 +145,8 @@ function Vector GetMouseWorldLocation() {
   MainMenuPlayerInput = MainMenuPlayerInput(PlayerOwner.PlayerInput);
 
   // Ensure that the player input is valid
-  if (MainMenuPlayerInput == None) {
+  if (MainMenuPlayerInput == None)
+	{
     return Vect(0, 0, 0);
   }
 
@@ -154,9 +167,9 @@ function Vector GetMouseWorldLocation() {
 defaultproperties
 {
 	// Set to false if you wish to use Unreal's player input to retrieve the mouse coordinates
-	UsingScaleForm=true
-	bpickhouse = false;
-	drawcursor = true;
+	UsingScaleForm = true
+	bpickhouse = false
+	DrawCursor = true
 	CursorColor=(R=255,G=255,B=255,A=255)
 	CursorTexture=Texture2D'EngineResources.Cursors.Arrow'
 }

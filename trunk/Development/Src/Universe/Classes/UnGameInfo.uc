@@ -1,7 +1,7 @@
 class UnGameInfo extends UTDeathmatch;
 
-exec function createbot() {
-	spawnbot();
+exec function CreateBot() {
+	SpawnBot();
 }
 
 defaultproperties

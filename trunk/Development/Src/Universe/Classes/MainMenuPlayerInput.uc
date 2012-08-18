@@ -3,7 +3,7 @@ class MainMenuPlayerInput extends PlayerInput;
 // Stored mouse position. Set to private write as we don't want other classes to modify it, but still allow other classes to access it.
 var PrivateWrite IntPoint MousePosition; 
 
-event PlayerInput(float DeltaTime)
+event PlayerInput(float deltaTime)
 {
   // Handle mouse 
   // Ensure we have a valid HUD
@@ -15,7 +15,7 @@ event PlayerInput(float DeltaTime)
     MousePosition.Y = Clamp(MousePosition.Y - aMouseY, 0, myHUD.SizeY); 
   }
 
-  Super.PlayerInput(DeltaTime);
+  Super.PlayerInput(deltaTime);
 }
 
 defaultproperties

@@ -3,9 +3,10 @@ class System_Star extends ClickableActor;
 // разиус звезды
 var float Rad;
 var float Mass;
-var float temp;
+var float Temp;
 
-function initialize() {
+function initialize()
+{
 	local int type;
 	type = Rand(3)+1; // в будущем надо сделать правильное распределение рандома
 
@@ -14,18 +15,18 @@ function initialize() {
 		case 1: // белые карлики (3-10% от всех)
 			Mass = (FRand()*1.4)*19891000; // баг (минимальное значение - ноль)
 			Rad = (FRand()*1.6+0.4)*695500;
-			temp = FRand()*5000+20000;
+			Temp = FRand()*5000+20000;
 			break;
 		// главная последовательность
 		case 2: // B - бело-голубые карлики
 			Mass = (FRand()*1.2)*19891000; // баг (минимальное значение - ноль)
 			Rad = (FRand()*1.6+0.4)*695500;
-			temp = FRand()*6000+17000;
+			Temp = FRand()*6000+17000;
 			break;
 		case 3: // A - белые звёзды
 			Mass = (FRand()*1.8)*19891000; // баг (минимальное значение - ноль)
 			Rad = (FRand()*1.6+0.4)*695500;
-			temp = FRand()*3000+10000;
+			Temp = FRand()*3000+10000;
 			break;
 		case 4: // F - жёлто-белые карлики
 			
@@ -78,7 +79,7 @@ function initialize() {
 			// исключительное событие
 			Mass = 666;
 			Rad = 666;
-			temp = 666;
+			Temp = 666;
 			break;
 	}
 }

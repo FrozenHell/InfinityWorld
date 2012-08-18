@@ -19,27 +19,33 @@ var() LinearColor NormalMatInstLinearColor;
 // Цвет свечения объекта (Параметр 'DiffuseColor') при наводке мыши
 var() LinearColor SelectMatInstLinearColor;
 
-var bool selected;
+var bool bSelected;
 
-simulated function PostBeginPlay() {
+simulated function PostBeginPlay()
+{
 	Material_MatInst = new(None) Class'MaterialInstanceConstant';
 	Material_MatInst.SetParent(Parent_MatInst);
 	StaticMeshComponent.SetMaterial(MatID, Material_MatInst);
 }
 
-function Select( bool b) {
-	if (b)	{
+function Select(bool b)
+{
+	if (b)
+	{
 		Material_MatInst.SetScalarParameterValue ('Diffuse', SelectMatInstFloat);
 		Material_MatInst.SetVectorParameterValue('DiffuseColor', SelectMatInstLinearColor);
-	}	else {
+	}
+	else
+	{
 		Material_MatInst.SetScalarParameterValue ('Diffuse', NormalMatInstFloat);
 		Material_MatInst.SetVectorParameterValue('DiffuseColor', NormalMatInstLinearColor);
 	}
 }
 
-function change() {
-	selected = selected?false:true;
-	select(selected);
+function Change()
+{
+	bSelected = !bSelected;
+	Select(bSelected);
 }
 
 defaultproperties

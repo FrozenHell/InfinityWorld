@@ -1,4 +1,4 @@
-class housepart extends Actor;
+class HousePart extends Actor;
 
 defaultProperties
 {

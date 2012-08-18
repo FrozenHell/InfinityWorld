@@ -1,4 +1,4 @@
-class testwindow extends housepart;
+class TestWindow extends housepart;
 
 defaultProperties
 {

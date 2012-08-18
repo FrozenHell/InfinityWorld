@@ -1,4 +1,4 @@
-class testwallex extends housepart;
+class TestWallEx extends housepart;
 
 defaultProperties
 {

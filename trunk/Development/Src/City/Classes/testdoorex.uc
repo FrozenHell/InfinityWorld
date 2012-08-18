@@ -1,4 +1,4 @@
-class testdoorex extends housepart;
+class TestDoorEx extends housepart;
 
 defaultProperties
 {

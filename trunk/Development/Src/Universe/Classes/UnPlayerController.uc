@@ -6,95 +6,120 @@
  */
 class UnPlayerController extends UTPlayerController;
 
-var mygalaxy galaxy;
-var myhouse house;
-var bool generated,generatedh;
+var MyGalaxy Galaxy;
+var MyHouse House;
+var bool bGalaxyGenerated, bHouseGenerated;
 
-exec function rotator UnrRot(float Pitch,float Yaw,float Roll) {
-	local rotator Rota;
-	local float DegToRot;
-	DegToRot = DegToRad*RadToUnrRot;
-	Rota.Pitch = Pitch*DegToRot;
-	Rota.Yaw = Yaw*DegToRot;
-	Rota.Roll = Roll*DegToRot;
-	return Rota;
+exec function rotator UnrRot(float pitch, float yaw, float roll)
+{
+	local rotator rota;
+	local float degToRot;
+	degToRot = DegToRad * RadToUnrRot;
+	rota.Pitch = pitch * degToRot;
+	rota.Yaw = yaw * degToRot;
+	rota.Roll = roll * degToRot;
+	return rota;
 }
 
-exec function vector vec(int x,int y,int z) {
+exec function vector Vec(int x, int y, int z)
+{
 	local vector ve;
-	ve.x=x;
-	ve.y=y;
-	ve.z=z;
+	ve.X = x;
+	ve.Y = y;
+	ve.Z = z;
 	return ve;
 }
 
-exec function drawgalaxy(optional int numst = 1000) {
-	if (!generated) {
-		galaxy = Spawn(class'City.mygalaxy',UnPawn(Owner),,vect(500,0,2000),rot(0,0,0));
+exec function drawgalaxy(optional int numStars = 1000)
+{
+	if (!bGalaxyGenerated)
+	{
+		galaxy = Spawn(class'City.mygalaxy', UnPawn(Owner),, vect(500, 0, 1000), rot(0, 0, 0));
 		galaxy.GetPlayerViewPoint = GetPlayerViewPoint;
-		generated = true;
-		say("Generated"@numst@"stars");
+		bGalaxyGenerated = true;
+		galaxy.gen(UnPawn(Owner), numStars);
+		say("Generated"@numStars@"stars");
 	}
-	galaxy.gen(UnPawn(Owner),numst);
 }
 
-exec function cleargalaxy() {
-	if (generated) {
+exec function rotateGalax(float Pitch, float Yaw, float Roll)
+{
+	//galaxy.RotateGf(Pitch, Yaw, Roll);
+}
+
+exec function cleargalaxy()
+{
+	if (bGalaxyGenerated)
+	{
 		galaxy.destroy();
-		generated = false;
-		say("Clearing Galaxy");
+		bGalaxyGenerated = false;
 	}
 }
 
-exec function drawhouse(optional int seed = 0) {
-	if (!generatedh) {
-		`log("start");
-		house = Spawn(class'City.myhouse',UnPawn(Owner),,vect(0,-100,-40),rot(0,0,0));
-		house.GetPlayerViewPoint = GetPlayerViewPoint;
-		house.gen2(UnPawn(Owner),4,4,4,seed+1);
-		`log("finish");
-		generatedh = true;
+exec function drawhouse(optional int seed = 0)
+{
+	if (!bHouseGenerated)
+	{
+		House = Spawn(class'City.myhouse', UnPawn(Owner),, vect(0, -100, -40),rot(0, 0, 0));
+		House.GetPlayerViewPoint = GetPlayerViewPoint;
+		House.gen2(UnPawn(Owner), 4, 4, 4, seed + 1);
+		bHouseGenerated = true;
 	}
 }
 
-exec function genmorehouses() {
-	local int i,j;
-	local myhouse how;
-	for (i=0;i<4;i++) {
-		for (j=0;j<4;j++) {
-			how = Spawn(class'City.myhouse',UnPawn(Owner),,vec(i*5000,j*5000,-40),UnrRot(0,0,0));
+exec function genmorehouses()
+{
+	local int i, j;
+	local MyHouse how;
+	for (i = 0; i < 4; i++)
+	{
+		for (j = 0; j < 4; j++)
+		{
+			how = Spawn(class'City.myhouse', UnPawn(Owner),, vec(i * 5000, j * 5000, -40), UnrRot(0, 0, 0));
 			how.GetPlayerViewPoint = GetPlayerViewPoint;
-			how.gen2(UnPawn(Owner),5,5,10,i+j);
+			how.gen2(UnPawn(Owner), 5, 5, 10, i + j);
 		}
 	}
 }
 
-exec function clearhouse() {
-	if (generatedh) {
+exec function clearhouse()
+{
+	if (bHouseGenerated)
+	{
 		house.destroy();
-		generatedh = false;
+		bHouseGenerated = false;
 		say("Clearing House");
 	}
 }
 
-exec function gen_ps() {
+exec function gen_ps()
+{
 	local PlanetSystem PS1;
-	PS1 = Spawn(class'City.PlanetSystem',UnPawn(Owner),,vec(50,30,300),UnrRot(0,0,0));
-	PS1.generate(UnPawn(Owner),1);
+	PS1 = Spawn(class'City.PlanetSystem', UnPawn(Owner),, vec(50, 30, 300), UnrRot(0, 0, 0));
+	PS1.generate(UnPawn(Owner), 1);
 }
 
 // нажали клавишу "Использовать"
-exec function use_actor() {
-	local Actor HitActor;
-	local vector HitNormal, HitLocation;
-	local vector ViewLocation;
-	local rotator ViewRotation;
-	GetPlayerViewPoint( ViewLocation, ViewRotation );
-	HitActor = Trace(HitLocation, HitNormal, ViewLocation + 100 * vector(ViewRotation), ViewLocation, true);
-	if (HitActor!=None) {
-		if (HitActor.IsA('UsableActor')) {
+exec function use_actor()
+{
+	local Actor hitActor;
+	local vector hitNormal, hitLocation;
+	local vector viewLocation;
+	local rotator viewRotation;
+	GetPlayerViewPoint(ViewLocation, viewRotation);
+	HitActor = Trace(hitLocation, hitNormal, viewLocation + 100 * vector(viewRotation), viewLocation, true);
+	if (HitActor != None)
+	{
+		// если это актёр, который можно использовать
+		if (HitActor.IsA('UsableActor'))
+		{
+			// использовать
 			UsableActor(HitActor).Use(Pawn);
-		} else if (HitActor.IsA('SpeakingPawn')) {
+		// иначе если это паун с которым можно заговорить
+		}
+		else if (HitActor.IsA('SpeakingPawn'))
+		{
+			// говорить
 			SpeakingPawn(HitActor).Talk(Pawn);
 		}
 	}
@@ -103,6 +128,6 @@ exec function use_actor() {
 defaultproperties
 {
 	Name="Default__UnPlayerController"
-	generated = false
-	generatedh = false
+	bGalaxyGenerated = false
+	bHouseGenerated = false
 }
