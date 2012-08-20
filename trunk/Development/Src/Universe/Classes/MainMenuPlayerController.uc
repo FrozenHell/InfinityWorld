@@ -104,8 +104,8 @@ auto state PlayerWaiting
 	
 Begin:
 	MainMenuHUD(myHUD).PickHouse = PickHouse;
-	SetLocation(vect(0, 0, 10000));
-	SetRotation(UnrRot(-90, 0, 0));
+	SetLocation(vect(-10000, 0, 0));
+	SetRotation(UnrRot(0, 0, 0));
 	GoTo('EndAll');
 
 // переходим к виду на планету
@@ -142,14 +142,14 @@ EndAll:
 
 }
 
-function rotator UnrRot(float pitch,float yaw,float roll)
+function rotator UnrRot(float pitch, float yaw, float roll)
 {
 	local rotator rota;
 	local float DegToRot;
-	DegToRot = DegToRad*RadToUnrRot;
-	rota.Pitch = pitch*DegToRot;
-	rota.Yaw = yaw*DegToRot;
-	rota.Roll = roll*DegToRot;
+	DegToRot = DegToRad * RadToUnrRot;
+	rota.Pitch = pitch * DegToRot;
+	rota.Yaw = yaw * DegToRot;
+	rota.Roll = roll * DegToRot;
 	return rota;
 }
 
@@ -163,7 +163,7 @@ exec function InitGalaxy(optional int numStars = 10000)
 		// передаём ссылку на функцию
 		CurrGalax.GetPlayerViewPoint = GetPlayerViewPoint;
 		// переключаем галактику в режим космоса
-		//CurrGalax.Cosmos = true;
+		CurrGalax.Cosmos = true;
 		// заполняем галактику звёздами в количестве numStars
 		CurrGalax.gen(Pawn(Owner), numStars);
 	}
@@ -205,14 +205,12 @@ function PickHouse(ClickableActor clicableevent)
 
 function UpdateRotation(float fDeltaTime)
 {
-	//local Rotator	viewRotation;
-	//local vector locvec;
 	// если мы в режиме вращения камеры
 	if (bRotation)
 	{
 		// вычисляем дельту поворота
-		TestTest.y = ((TestTest.y - PlayerInput.aLookUp / 1000 > 0.0) ? 0.0 : (TestTest.y - PlayerInput.aLookUp / 1000 < -3.14) ? -3.14 : TestTest.y - PlayerInput.aLookUp / 1000);
-		//CurrGalax.RotateGf(0, TestTest.y, TestTest.x += PlayerInput.aTurn / 1000);
+		TestTest.y = ((TestTest.y - PlayerInput.aLookUp / 1000 > 1.57) ? 1.57 : (TestTest.y - PlayerInput.aLookUp / 1000 < -1.57) ? -1.57 : TestTest.y - PlayerInput.aLookUp / 1000);
+		CurrGalax.RotateGf(0, TestTest.y, TestTest.x += PlayerInput.aTurn / 1000);
 	}
 }
 
@@ -232,13 +230,16 @@ function UpdCamRot()
 }
 
 // изменяем расстояние камеры
-function ChCamRange(int inc, optional bool mult = false) {
-	local int newRange, maxRange, minRange;
-	maxRange = 20000;
-	minRange = 1000;
-	newrange = mult ? CameraRange * inc : CameraRange + inc;
-	if (newRange > minRange && newRange < maxRange)
-		CameraRange = newRange;
+function ChangeRange(float mod) {
+	switch (CurrentView)
+	{
+		case MP_Galaxy: // галактика
+			CurrGalax.ScaleG(mod);
+			break;
+		// будет задействовано позже
+		default:
+			break;
+	}
 }
 
 
@@ -248,7 +249,7 @@ function ClickToAct(ClickableActor clAct)
 	if (ministar(clAct) != None && CurrentView == MP_Galaxy) // звезда в галактике
 	{
 		CurrentView = MP_System;
-		//CurrGalax.MoveGf(-clAct.Location);
+		CurrGalax.MoveGf(-clAct.Location);
 		CurrGalax.ZoomIn();
 		//CurrGalax.destroy();
 		//CurrSyst = Spawn(class'City.PlanetSystem', UnPawn(Owner),, ViewPoint, Rot(0, 0, 0));
@@ -309,14 +310,12 @@ function HandleMouseInput(EMouseEvent mouseEvent, EInputEvent inputEvent)
 
 				case ME_ScrollWheelUp:
 					// колёсико вверх
-					ChCamRange(-1000);
-					UpdCamRot();
+					ChangeRange(1.1);
 					break;
 
 				case ME_ScrollWheelDown:
 					// колёсико вниз
-					ChCamRange(1000);
-					UpdCamRot();
+					ChangeRange(0.9);
 					break;
 
 				default:

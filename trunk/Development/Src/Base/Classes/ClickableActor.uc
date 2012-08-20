@@ -69,5 +69,5 @@ defaultproperties
 	bRouteBeginPlayEvenIfStatic=false
 	bCollideWhenPlacing=false
 	
-	selected = false;
+	bSelected = false;
 }

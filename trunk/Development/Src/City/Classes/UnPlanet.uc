@@ -39,14 +39,6 @@ defaultProperties
 		BlockRigidBody = True
 	End Object
 	Components.add(StaticMeshComponent)
-	
-	Begin Object Class=StaticMeshComponent Name=StaticMeshComponent2
-		StaticMesh=StaticMesh'Houses.Planets.PlanetAtmosphere'
-		CollideActors = True
-		BlockActors = True
-		BlockRigidBody = True
-	End Object
-	Components.add(StaticMeshComponent2)
 
 	Parent_MatInst = MaterialInstanceConstant'Houses.Planets.Atmosphere1_INST'
 	MatID = 0
