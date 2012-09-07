@@ -106,22 +106,17 @@ exec function use_actor()
 	local vector hitNormal, hitLocation;
 	local vector viewLocation;
 	local rotator viewRotation;
-	GetPlayerViewPoint(ViewLocation, viewRotation);
-	HitActor = Trace(hitLocation, hitNormal, viewLocation + 100 * vector(viewRotation), viewLocation, true);
-	if (HitActor != None)
+	// расстояние на котором можем использовать объекты
+	local float maxRange;
+	maxRange = 100;
+	GetPlayerViewPoint(viewLocation, viewRotation);
+	HitActor = Trace(hitLocation, hitNormal, viewLocation + maxRange * vector(viewRotation), viewLocation, true);
+
+	// если мы нажали на актёра, который можно использовать
+	if (Useable(HitActor) != None)
 	{
-		// если это актёр, который можно использовать
-		if (HitActor.IsA('UsableActor'))
-		{
-			// использовать
-			UsableActor(HitActor).Use(Pawn);
-		// иначе если это паун с которым можно заговорить
-		}
-		else if (HitActor.IsA('SpeakingPawn'))
-		{
-			// говорить
-			SpeakingPawn(HitActor).Talk(Pawn);
-		}
+		// использовать
+		Useable(HitActor).Use(Pawn);
 	}
 }
 

@@ -3,9 +3,13 @@
  *
  *	Creation date: 01.04.2012 22:10
  *	Copyright 2012, FrozenHell Skyline
+ *	
+ *	Актёр для тестирования определённых функций, связанных с использованием объектов
+ *	Не используйте его в конечном проекте
  */
 class UsableActor extends Actor
-	placeable;
+	placeable
+	implements(Useable);
 
 var() const editconst StaticMeshComponent	StaticMeshComponent;
 
@@ -15,6 +19,7 @@ public function Use(Pawn uInstigator)
 	PlaySound(SoundCue'A_Gameplay.Gameplay.MessageBeepCue', true);
 }
 
+delegate Asd(Pawn asd);
 
 defaultproperties
 {
