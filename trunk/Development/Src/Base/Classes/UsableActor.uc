@@ -19,8 +19,6 @@ public function Use(Pawn uInstigator)
 	PlaySound(SoundCue'A_Gameplay.Gameplay.MessageBeepCue', true);
 }
 
-delegate Asd(Pawn asd);
-
 defaultproperties
 {
 	Begin Object Class=StaticMeshComponent Name=StaticMeshComponent0

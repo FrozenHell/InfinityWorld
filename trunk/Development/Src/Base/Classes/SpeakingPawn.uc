@@ -8,7 +8,7 @@
  *	Не используйте его в конечном проекте
  */
 class SpeakingPawn extends UTPawn // надо будет наследовать от другого класса
-;//	implements(Useable);
+	implements(Useable);
 
 // заговорить с пауном
 public function Use(Pawn uInstigator)
