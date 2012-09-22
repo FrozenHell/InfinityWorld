@@ -17,25 +17,30 @@ struct Matr3
 	var float m11, m12, m13, m21, m22, m23, m31, m32, m33;
 };
 
-// максимальная координата (ввобще-то чуть меньше максимальной)
+// максимальная координата (на самом деле, чуть меньше максимальной)
 const WorldSize = 262000;
 
 // в космосе ли мы находимся
-var bool Cosmos; // если false то мы находимся в галаграфической модели
+var bool bCosmos; // если false то мы находимся в галографической модели
 // звёзды
-var array<Actor> Stars;
+var array<MiniStar> Stars;
 // структура, получаемая из DLL
 var MyNavigationStruct MyData;
 // игрок (нужно для реализации некоторых стандартных функций)
-var Pawn MyPawn;
-// заполнена ли галактика
+var protected Pawn MyPawn;
+// сгенерирована ли галактика
 var bool bGenerated;
 // количество звёзд
 var int MaxStars;
-// исходный множитель масштаба
+// масштаб
 var float GalaxyScale;
 // положение центра галактики относительно фокуса
 var vector GalaxyCenter;
+// повороты в градусах
+var float fPitch, fYaw, fRoll;
+
+// индекс звезды, на которой мы сфокусировались
+var int FocusIndex;
 
 // зависимость размера звезды от расстояния
 var float RangeScale;
@@ -84,14 +89,14 @@ auto state InMenu
 		local int i;
 		local float scale, unScale;
 		scale = 1.1;
-		unscale = 262000 / scale;
+		unscale = WorldSize / scale;
 		for (i = 0; i < MaxStars; i++)
 		{
 			if (Stars[i] != None)
 			{
 				if (VSize(Stars[i].Location) > unScale)
 				{
-					Stars[i].SetLocation((Stars[i].Location / max(max(abs(Stars[i].Location.x), abs(Stars[i].Location.y)), abs(Stars[i].Location.z))) * 262000);
+					Stars[i].SetLocation((Stars[i].Location / VSize(Stars[i].Location)) * WorldSize);
 				}
 				else
 					Stars[i].SetLocation(Stars[i].Location * scale);
@@ -99,7 +104,7 @@ auto state InMenu
 		}
 		Resize();
 		GalaxyScale *= 1.1;
-		return (GalaxyScale > 8);
+		return (GalaxyScale < 10);
 	}
 
 Begin:
@@ -120,12 +125,16 @@ EndZoom:
 	`log("zummed");
 	RangeScale = 0.0004;
 	Resize();
+	
+	// для отладки
+	GoTo('CheckSize');
 
 EndAll:
-
+	
 }
 
-function rotator UnrRot(float pitch, float yaw, float roll)
+// создать ротатор, основываясь на поворотах в градусах
+final function rotator UnrRot(float pitch, float yaw, float roll)
 {
 	local float degToRot;
 	local rotator rota;
@@ -136,151 +145,132 @@ function rotator UnrRot(float pitch, float yaw, float roll)
 	return rota;
 }
 
+// сгенерировать галактику
 function Gen(Pawn locPawn, int numStars)
 {
-	local vector posit;
 	local int i;
-	if (!bGenerated) {
+	if (!bGenerated)
+	{
 		GetNavData(MyData, numStars);
 		MyPawn = locPawn;
 		bGenerated = true;
 		MaxStars = numStars;
 		for (i = 0; i < MaxStars; i++)
 		{
-			posit.x = MyData.NavigationData[i * 3] + Location.x;
-			posit.y = MyData.NavigationData[i * 3 + 1] + Location.y;
-			posit.z = MyData.NavigationData[i * 3 + 2] + Location.z;
-			Stars[i] = (Spawn(class'City.ministar', MyPawn,, posit, rot(0, 0, 0)));
+			Stars[i] = (Spawn(class'City.ministar', MyPawn,, Location, rot(0, 0, 0)));
+			Stars[i].Index = i;
 		}
 	}
 	else
 		`log("Galaxy already generated!");
-}
-
-// установить новый поворот галактики (вокруг центра координат) (без проверок)
-function RotateGf(float Pitch, float Yaw, float Roll)
-{
-	// матрица вращения
-	local Matr3 rotMat;
-	local int i;
-	local vector locVec;
 	
-	// матрица вращения 
-	rotMat.m11 = cos(yaw) * cos(roll) - sin(pitch) * sin (yaw) * sin(roll);
-	rotMat.m12 = -cos(pitch) * sin(roll);
-	rotMat.m13 = sin(yaw) * cos(roll) + sin(pitch) * cos(yaw) * sin(roll);
-	rotMat.m21 = cos(yaw) * sin(roll) + sin(pitch) * sin(yaw) * cos(roll);
-	rotMat.m22 = cos(pitch) * cos(roll);
-	rotMat.m23 = sin(yaw) * sin(roll) - sin(pitch) * cos(yaw) * cos(roll);
-	rotMat.m31 = -cos(pitch) * sin(yaw);
-	rotMat.m32 = sin(pitch);
-	rotMat.m33 = cos(pitch) * cos(yaw);
+	GalaxyCenter = vect(0, 0, 0);
 	
-	for (i = 0; i < MaxStars; i++)
-	{
-		locVec.x = MyData.NavigationData[i * 3];
-		locVec.y = MyData.NavigationData[i * 3 + 1];
-		locVec.z = MyData.NavigationData[i * 3 + 2];
-		
-		locVec = (locVec * rotMat) * GalaxyScale;
-		
-		Stars[i].SetLocation(locVec);
-	}
-	
-	SetRotation(UnrRot(Pitch, Yaw, Roll));
-	ScaleG();
+	RedrawGalaxy();
 }
 
-// установить новое положение галактики (без проверок)
-function MoveGf(optional vector Dest = vect(0, 0, 0))
+// установить новый поворот галактики
+function RotateG(float pitch, float yaw, float roll)
 {
-	/*local int i;
-	local vector locVec;
-	// сдвиг
-	local vector Delta;
-	Delta = Location - Dest;
-	for (i = 0; i < MaxStars; i++)
-	{
-		locVec = Stars[i].Location - Delta;
-		Stars[i].SetLocation(locVec);
-	}
-	SetLocation(Dest);*/
+	fPitch = pitch;
+	fYaw = yaw;
+	fRoll = roll;
+	RedrawGalaxy();
 }
 
-// установить новое положение галактики (с проверками)
-function MoveG(optional vector Dest = vect(0, 0, 0))
+// установить новое положение галактики
+function MoveG(vector Dest)
 {
-
+	GalaxyCenter = Dest;
+	RedrawGalaxy();
 }
 
-// увеличить(уменьшить) размер галактики на определённую величину (из центра координат в сферу) (с проверками)
-function ScaleG(optional float modScale = 1.0)
+// увеличить(уменьшить) размер галактики на определённую величину (из центра координат в сферу)
+function ScaleG(float modScale)
 {
-	local int i;
 	GalaxyScale *= modScale;
-	for (i = 0; i < MaxStars; i++)
-	{
-		if (VSize(Stars[i].Location) * modScale > 262000)
-		{
-			Stars[i].SetLocation((Stars[i].Location / VSize(Stars[i].Location)) * 262000);
-		}
-		else
-			Stars[i].SetLocation(Stars[i].Location * modScale);
-	}
-	// заменить на MoveG
-	MoveGf();
+	RedrawGalaxy();
 }
 
+// установить центром модели звезду
+function NewFocus(MiniStar localStar)
+{
+	GalaxyCenter.x = - MyData.NavigationData[localStar.Index * 3];
+	GalaxyCenter.y = - MyData.NavigationData[localStar.Index * 3 + 1];
+	GalaxyCenter.z = - MyData.NavigationData[localStar.Index * 3 + 2];
+	
+	RedrawGalaxy();
+}
+
+// полная перерисовка галактики
 function RedrawGalaxy()
 {
-/*
 	// матрица вращения
 	local Matr3 rotMat;
 	local int i;
 	local vector locVec;
 	
-	// матрица вращения 
-	rotMat.m11 = cos(yaw) * cos(roll) - sin(pitch) * sin (yaw) * sin(roll);
-	rotMat.m12 = -cos(pitch) * sin(roll);
-	rotMat.m13 = sin(yaw) * cos(roll) + sin(pitch) * cos(yaw) * sin(roll);
-	rotMat.m21 = cos(yaw) * sin(roll) + sin(pitch) * sin(yaw) * cos(roll);
-	rotMat.m22 = cos(pitch) * cos(roll);
-	rotMat.m23 = sin(yaw) * sin(roll) - sin(pitch) * cos(yaw) * cos(roll);
-	rotMat.m31 = -cos(pitch) * sin(yaw);
-	rotMat.m32 = sin(pitch);
-	rotMat.m33 = cos(pitch) * cos(yaw);
+	// заполнение матрицы вращения 
+	rotMat.m11 = cos(fYaw) * cos(fRoll) - sin(fPitch) * sin (fYaw) * sin(fRoll);
+	rotMat.m12 = -cos(fPitch) * sin(fRoll);
+	rotMat.m13 = sin(fYaw) * cos(fRoll) + sin(fPitch) * cos(fYaw) * sin(fRoll);
+	rotMat.m21 = cos(fYaw) * sin(fRoll) + sin(fPitch) * sin(fYaw) * cos(fRoll);
+	rotMat.m22 = cos(fPitch) * cos(fRoll);
+	rotMat.m23 = sin(fYaw) * sin(fRoll) - sin(fPitch) * cos(fYaw) * cos(fRoll);
+	rotMat.m31 = -cos(fPitch) * sin(fYaw);
+	rotMat.m32 = sin(fPitch);
+	rotMat.m33 = cos(fPitch) * cos(fYaw);
 	
+	// для каждой звезды
 	for (i = 0; i < MaxStars; i++)
 	{
+		// берём реальные координаты
 		locVec.x = MyData.NavigationData[i * 3];
 		locVec.y = MyData.NavigationData[i * 3 + 1];
 		locVec.z = MyData.NavigationData[i * 3 + 2];
 		
-		if (VSize(Stars[i].Location) * GalaxyScale > 262000)
-		{
-			locVec = (locVec * rotMat) / VSize(Stars[i].Location) * 262000);
-		}
-		else
-			locVec = (locVec * rotMat) * GalaxyScale);
+		// двигаем
+		locVec += Location + GalaxyCenter;
 		
-		Stars[i].SetLocation(locVec);
-		
-	}
-	
-	
-	for (i = 0; i < MaxStars; i++)
-	{
-		if (VSize(Stars[i].Location) * modScale > 262000)
+		// масштабируем
+		if (bCosmos) // если мы в космосе, масштабируем из центра координат
 		{
-			Stars[i].SetLocation((Stars[i].Location / VSize(Stars[i].Location)) * 262000);
+			if (VSize(locVec) * GalaxyScale > WorldSize)
+			{
+				locVec = (locVec / VSize(locVec)) * WorldSize;
+			}
+			else
+				locVec *= GalaxyScale;
 		}
-		else
-			Stars[i].SetLocation(Stars[i].Location * modScale);
+		else // если это модель, масштабируем из центра модели
+		{
+			if (VSize(locVec) * GalaxyScale > WorldSize)
+			{
+				if (Stars[i] != None)
+				{
+					Stars[i].Destroy();
+					Stars[i] = None;
+				}
+			}
+			else
+			{
+				if (Stars[i] == None)
+				{
+					Stars[i] = (Spawn(class'City.ministar', MyPawn,, locVec, rot(0, 0, 0)));
+					Stars[i].Index = i;
+				}
+				locVec *= GalaxyScale;
+			}
+		}
+		
+		
+		// поворачиваем
+		if (Stars[i] != None)
+			Stars[i].SetLocation(locVec * rotMat);
 	}
-	// заменить на MoveG
-	MoveGf();*/
 }
 
+// уничтожение галактики
 simulated function Destroyed()
 {
 	local int i;
@@ -289,11 +279,13 @@ simulated function Destroyed()
 		{
 			Stars[i].Destroy();
 		}
-	super.Destroyed();
+	Super.Destroyed();
 }
 
+// приблизить до звезды
 function ZoomIn()
 {
+	RedrawGalaxy();
 	GoToState('InMenu', 'ZoomInto');
 }
 
@@ -303,5 +295,6 @@ defaultproperties
 	MaxStars = 0
 	RangeScale = 0.0002
 	GalaxyScale = 0.1
-	Cosmos = false;
+	bCosmos = false;
+	FocusIndex = -1;
 }

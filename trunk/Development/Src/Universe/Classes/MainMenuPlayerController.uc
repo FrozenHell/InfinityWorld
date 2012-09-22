@@ -10,20 +10,23 @@ enum EMouseEvent
 	ME_ScrollWheelDown
 };
 
-enum EModelPart {
+// текущий вид (галактика, звезда, планета, спутник)
+var enum EModelPart
+{
 	MP_Galaxy,
 	MP_System,
 	MP_Planet,
 	MP_Sputnik
-};
+} CurrentView;
 
 // вращаем ли мы камеру
 var bool bRotation;
 
-var vector TestTest;
+// угол поворота модели в градусах
+var vector RotationDeg;
 
 // текущий объект
-var ClickableActor currentevent;
+var ClickableActor CurrentObject;
 
 // галактика
 var MyGalaxy CurrGalax;
@@ -61,13 +64,9 @@ var float CameraRange;
 // угол камеры к центру объекта, как если бы она смотрела в центр
 var rotator CameraAngle;
 
-// текущий вид (галактика, звезда, планета, спутник)
-var EModelPart CurrentView;
-
 // Override this state because StartFire isn't called globally when in this function
 auto state PlayerWaiting
 {
-	
 	exec function StartFire(optional byte fireModeNum)
 	{
 		Global.StartFire(fireModeNum);
@@ -76,30 +75,6 @@ auto state PlayerWaiting
 	function PlayerMove(float fDeltaTime)
 	{
 		UpdateRotation(fDeltaTime);
-	}
-	
-	function bool UpdCamToFocusPos()
-	{
-		if (VSize(NewFocusPos - ViewPoint) > Delta)
-			ViewPoint += Normal(NewFocusPos - ViewPoint) * Delta; // двигаем на скал€рную величину
-		else
-			ViewPoint += NewFocusPos - ViewPoint; // последний шаг
-		
-		// обновл€ем позицию камеры
-		UpdCamRot();
-		return ViewPoint == NewFocusPos;
-	}
-	
-	// движение камеры к актЄру
-	function bool UpdCamToFocusActPos()
-	{
-		if (VSize(NewFocusAct.Location - ViewPoint) > Delta)
-			ViewPoint += Normal(NewFocusAct.Location - ViewPoint) * Delta; // двигаем на скал€рную величину
-		else
-			ViewPoint += NewFocusAct.Location - ViewPoint; // делаем последний точный шаг
-		// обновл€ем позицию камеры
-		UpdCamRot();
-		return VSize(NewFocusAct.Location-ViewPoint) < Delta;
 	}
 	
 Begin:
@@ -116,41 +91,8 @@ WatchPlanet:
 	Sleep(0.04);
 	GoTo('WatchPlanet');
 
-// плавно мен€ем положение цели камеры затем переход€ на обзор планеты	
-ChangePlanet:
-	DeltaMoveTime = 3;
-	DeltaTime = 0.05;
-	Delta = VSize(NewFocusAct.Location - ViewPoint) * DeltaTime / DeltaMoveTime;
-ChangePlanetCyc:
-	Sleep(DeltaTime);
-	// достигли ли нужной точки
-	if (UpdCamToFocusActPos()) GoTo('WatchPlanet');
-	GoTo('ChangePlanetCyc');
-
-// плавно мен€ем положение цели камеры
-MoveTCam:
-	DeltaMoveTime = 3;
-	DeltaTime = 0.05;
-	Delta = VSize(NewFocusPos - ViewPoint) * DeltaTime / DeltaMoveTime;
-MoveTCamCyc:
-	Sleep(DeltaTime);
-	// достигли ли нужной точки
-	if (UpdCamToFocusPos()) GoTo('EndAll');
-	GoTo('MoveTCamCyc');
-
 EndAll:
 
-}
-
-function rotator UnrRot(float pitch, float yaw, float roll)
-{
-	local rotator rota;
-	local float DegToRot;
-	DegToRot = DegToRad * RadToUnrRot;
-	rota.Pitch = pitch * DegToRot;
-	rota.Yaw = yaw * DegToRot;
-	rota.Roll = roll * DegToRot;
-	return rota;
 }
 
 // создаЄм галактику
@@ -163,21 +105,33 @@ exec function InitGalaxy(optional int numStars = 10000)
 		// передаЄм ссылку на функцию
 		CurrGalax.GetPlayerViewPoint = GetPlayerViewPoint;
 		// переключаем галактику в режим космоса
-		CurrGalax.Cosmos = true;
+		CurrGalax.bCosmos = true;
 		// заполн€ем галактику звЄздами в количестве numStars
 		CurrGalax.gen(Pawn(Owner), numStars);
 	}
 	UpdCamRot();
 }
 
-// функци€ вызываетс€ из Hud-а
-function PickHouse(ClickableActor clicableevent)
+// создать ротатор, основыва€сь на поворотах в градусах
+protected function rotator UnrRot(float pitch, float yaw, float roll)
 {
-	if (currentevent != None)
-		currentevent.select(false);
-	currentevent = clicableevent;
-	if (currentevent != None)
-		currentevent.select(true);
+	local rotator rota;
+	local float DegToRot;
+	DegToRot = DegToRad * RadToUnrRot;
+	rota.Pitch = pitch * DegToRot;
+	rota.Yaw = yaw * DegToRot;
+	rota.Roll = roll * DegToRot;
+	return rota;
+}
+
+// функци€ вызываетс€ из Hud-а
+function PickHouse(ClickableActor clicableObject)
+{
+	if (CurrentObject != None)
+		CurrentObject.select(false);
+	CurrentObject = clicableObject;
+	if (CurrentObject != None)
+		CurrentObject.select(true);
 }
 
 // пытаемс€ повернуть камеру
@@ -209,8 +163,8 @@ function UpdateRotation(float fDeltaTime)
 	if (bRotation)
 	{
 		// вычисл€ем дельту поворота
-		TestTest.y = ((TestTest.y - PlayerInput.aLookUp / 1000 > 1.57) ? 1.57 : (TestTest.y - PlayerInput.aLookUp / 1000 < -1.57) ? -1.57 : TestTest.y - PlayerInput.aLookUp / 1000);
-		CurrGalax.RotateGf(0, TestTest.y, TestTest.x += PlayerInput.aTurn / 1000);
+		RotationDeg.y = ((RotationDeg.y - PlayerInput.aLookUp / 2000 > 1.57) ? 1.57 : (RotationDeg.y - PlayerInput.aLookUp / 2000 < -1.57) ? -1.57 : RotationDeg.y - PlayerInput.aLookUp / 2000);
+		CurrGalax.RotateG(0, RotationDeg.y, RotationDeg.x += PlayerInput.aTurn / 2000);
 	}
 }
 
@@ -233,10 +187,10 @@ function UpdCamRot()
 function ChangeRange(float mod) {
 	switch (CurrentView)
 	{
-		case MP_Galaxy: // галактика
+		case MP_Galaxy: // если галактика
 			CurrGalax.ScaleG(mod);
 			break;
-		// будет задействовано позже
+		// остальное будет задействовано чуть позже
 		default:
 			break;
 	}
@@ -248,12 +202,12 @@ function ClickToAct(ClickableActor clAct)
 {
 	if (ministar(clAct) != None && CurrentView == MP_Galaxy) // звезда в галактике
 	{
-		CurrentView = MP_System;
-		CurrGalax.MoveGf(-clAct.Location);
-		CurrGalax.ZoomIn();
+		//CurrentView = MP_System;
+		CurrGalax.NewFocus(MiniStar(clAct));
+		//CurrGalax.ZoomIn();
 		//CurrGalax.destroy();
 		//CurrSyst = Spawn(class'City.PlanetSystem', UnPawn(Owner),, ViewPoint, Rot(0, 0, 0));
-		//CurrSyst.generate(UnPawn(Owner),1);
+		//CurrSyst.generate(UnPawn(Owner), 1);
 	}
 	else if (System_Star(clAct) != None) // звезда в системе
 	{
@@ -291,10 +245,10 @@ function HandleMouseInput(EMouseEvent mouseEvent, EInputEvent inputEvent)
 					// Ћ ћ нажата
 					
 					// если кликнули по ClickableActor
-					if (currentevent != None)
+					if (CurrentObject != None)
 					{
 						// выделить его цветом
-						ClickToAct(currentevent);
+						ClickToAct(CurrentObject);
 					}
 					break;
 
@@ -395,7 +349,7 @@ exec function MiddleMouseScrollDown()
 defaultproperties
 {
 	// Set the input class to the mouse interface player input
-  InputClass=class'MainMenuPlayerInput'
+  InputClass = class'MainMenuPlayerInput'
 	CurrentView = MP_Galaxy
 	CameraRange = 10000
 	bRotation = false

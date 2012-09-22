@@ -8,15 +8,15 @@ var() MaterialInstanceConstant Parent_MatInst;
 // ID материала для замены InstConst материала
 var() int MatID;
 
-// Размер свечения объекта (Параметр 'Diffuse') до наводки мыши
+// Размер свечения объекта (Параметр 'Diffuse') без выделения
 var() float NormalMatInstFloat;
-// Размер свечения объекта (Параметр 'Diffuse') при наводке мыши
+// Размер свечения объекта (Параметр 'Diffuse') при выделении
 var() float SelectMatInstFloat;
 
-// Цвет свечения объекта (Параметр 'DiffuseColor') до наводки мыши
+// Цвет свечения объекта (Параметр 'DiffuseColor') без выделения
 var() LinearColor NormalMatInstLinearColor;
 
-// Цвет свечения объекта (Параметр 'DiffuseColor') при наводке мыши
+// Цвет свечения объекта (Параметр 'DiffuseColor') при выделении
 var() LinearColor SelectMatInstLinearColor;
 
 var bool bSelected;
@@ -34,40 +34,41 @@ function Select(bool b)
 	{
 		Material_MatInst.SetScalarParameterValue ('Diffuse', SelectMatInstFloat);
 		Material_MatInst.SetVectorParameterValue('DiffuseColor', SelectMatInstLinearColor);
+		bSelected = true;
 	}
 	else
 	{
 		Material_MatInst.SetScalarParameterValue ('Diffuse', NormalMatInstFloat);
 		Material_MatInst.SetVectorParameterValue('DiffuseColor', NormalMatInstLinearColor);
+		bSelected = false;
 	}
 }
 
 function Change()
 {
-	bSelected = !bSelected;
-	Select(bSelected);
+	Select(!bSelected);
 }
 
 defaultproperties
 {
 	Begin Object Class=StaticMeshComponent Name=StaticMeshComponent
-		bAllowApproximateOcclusion=TRUE
-		bForceDirectLightMap=TRUE
-		bUsePrecomputedShadows=TRUE
+		bAllowApproximateOcclusion = TRUE
+		bForceDirectLightMap = TRUE
+		bUsePrecomputedShadows = TRUE
 		StaticMesh=StaticMesh'LT_Light.SM.Mesh.S_LT_Light_SM_Light01'
 	End Object
-	CollisionComponent=StaticMeshComponent
-	StaticMeshComponent=StaticMeshComponent
+	CollisionComponent = StaticMeshComponent
+	StaticMeshComponent = StaticMeshComponent
 	Components.Add(StaticMeshComponent)
-	bEdShouldSnap=true
-	bStatic=false
-	bMovable=true
-	bCollideActors=true
-	bBlockActors=true
-	bWorldGeometry=true
-	bGameRelevant=true
-	bRouteBeginPlayEvenIfStatic=false
-	bCollideWhenPlacing=false
+	bEdShouldSnap = true
+	bStatic = false
+	bMovable = true
+	bCollideActors = true
+	bBlockActors = true
+	bWorldGeometry = true
+	bGameRelevant = true
+	bRouteBeginPlayEvenIfStatic = false
+	bCollideWhenPlacing = false
 	
 	bSelected = false;
 }
