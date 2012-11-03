@@ -92,6 +92,30 @@ exec function clearhouse()
 	}
 }
 
+// тестируем навигационные сети
+exec function getnearnavnode()
+{
+	local vector viewLocation;
+	local rotator viewRotation;
+	local NavNode node;
+	local ministar star;
+	local int i;
+	
+	// ищем координаты игрока
+	GetPlayerViewPoint(viewLocation, viewRotation);
+	
+	// ищем ближайшую ноду и создаём там светящуюся точку
+	node = house.SearchNearNavNode(viewLocation);
+	star = Spawn(class'City.ministar', UnPawn(Owner),, node.pos, UnrRot(0, 0, 0));
+	star.Change(); // подсветить белым
+	
+	// показать связи
+	for (i = 0; i < node.LinksSize; i++)
+	{
+		Spawn(class'City.ministar', UnPawn(Owner),, node.pos - (node.pos - node.Links[i].pos)/3, UnrRot(0, 0, 0));
+	}
+}
+
 exec function gen_ps()
 {
 	local PlanetSystem PS1;

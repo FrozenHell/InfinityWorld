@@ -4,7 +4,8 @@
 class MyHouse extends Actor
 	DLLBind(house);
 
-struct Cell {
+struct Cell
+{
 	var Actor North, East, West, South, Lex, Wex, Pol, Roof, Grain;
 	var bool bVisible;
 	
@@ -13,6 +14,18 @@ struct Cell {
 		bVisible = false;
 	}
 };
+
+// навигационный узел
+/*	struct NavNode
+ *	{
+ *		var double g, h, f;
+ *		var int index;
+ *		var vector Pos;
+ *		// массив нод, ссылающихся на текущую ноду (или на которые ссылается эта)
+ *		var array<pointer> Nodes;
+ *		var pointer CameFrom;
+ *	};
+*/
 
 var int UtoR, Utor2, UtoR3;
 
@@ -29,19 +42,23 @@ var rotator Angle;
 var vector Center; // вспомогательная переменная для определения точных координат ячеек
 
 /*
-Visiblity
-00000000 - здание полностью скрыто(или вместо него подгружен LOD)
-00000001 - здание полностью загружено в память
-00000010 - загружена западная часть
-00000100 - загружена восточная часть
-00001000 - загружена северная часть
-00010000 - загружена южная часть
-00100000 - загружена крыша здания
-01000000 - загружены несколько этажей (-2,-1,текущий,+1,+2)
+ * Visiblity
+ * 00000000 - здание полностью скрыто(или вместо него подгружен LOD)
+ * 00000001 - здание полностью загружено в память
+ * 00000010 - загружена западная часть
+ * 00000100 - загружена восточная часть
+ * 00001000 - загружена северная часть
+ * 00010000 - загружена южная часть
+ * 00100000 - загружена крыша здания
+ * 01000000 - загружены несколько этажей (-2,-1,текущий,+1,+2)
 */
 var int Visiblity; // переменная показывает видимость
 
-var array<cell> Mass;
+// массив ячеек здания
+var array<Cell> Mass;
+
+// массив навигационых узлов
+var array<NavNode> NavNet;
 
 dllimport final function GetNavData(out MyNavigationStruct NavData, int len, int wid, int hei, int seed);
 dllimport final function GetNavData2(out MyNavigationStruct NavData,out MyNavigationStruct NavData2, int len, int wid, int hei, int xpos, int ypos, int zpos);
@@ -112,7 +129,7 @@ private function int isbit(int a, int b)
 	return((a >> b) % 2);
 }
 
-// возвращает 1 или 0 (бит числа "а" в позиции "b")
+// возвращает true или false (бит числа "а" в позиции "b")
 private function bool isBitB(int a, int b)
 {
 	return((a >> b) % 2 == 1);
@@ -124,48 +141,56 @@ private function int is2bit(int a, int b)
 	return((a >> (b + b)) % 4);
 }
 
-/*exec function rotator UnrRot(float pitch, float yaw, float roll)
-{
-	local rotator rota;
-	local float degToRot;
-	degToRot = DegToRad * RadToUnrRot;
-	Rota.Pitch = pitch * degToRot;
-	Rota.Yaw = yaw * degToRot;
-	Rota.Roll = roll * degToRot;
-	return Rota;
-}*/
+/*
+ *	exec function rotator UnrRot(float pitch, float yaw, float roll)
+ *	{
+ *		local rotator rota;
+ *		local float degToRot;
+ *		degToRot = DegToRad * RadToUnrRot;
+ *		Rota.Pitch = pitch * degToRot;
+ *		Rota.Yaw = yaw * degToRot;
+ *		Rota.Roll = roll * degToRot;
+ *		return Rota;
+ *	}
+*/
 
 private function rotator QwatRot(float qYaw) // очень часто выполняемая функция
 {
 	local rotator rota;
 	//Rota.Pitch = 0; // обнуления не нужны
-	rota.Yaw = angle.Yaw +(qYaw == 0 ? 0 : qYaw == 1 ? UtoR : qYaw == 2 ? Utor2 : Utor3); //qYaw * 90 * DegToRad * RadToUnrRot;
+	rota.Yaw = angle.Yaw +(qYaw == 0 ? 0 : qYaw == 1 ? UtoR : qYaw == 2 ? Utor2 : Utor3); // то же что qYaw * 90 * DegToRad * RadToUnrRot;
 	//Rota.Roll = 0;
 	return rota;
 }
 
+// рисование ячейки
 private function cell DrawCell(int celll, const out vector posit, int wzPos, int wxPos, int wyPos, bool st)
 {
 	local cell yachejka;
-	yachejka.North = drawHPart(Is2Bit(celll,3), 3, posit);
-	yachejka.East = drawHPart(Is2Bit(celll,2), 0, posit);
-	yachejka.South = drawHPart(Is2Bit(celll,1), 1, posit);
-	yachejka.West = drawHPart(Is2Bit(celll,0), 2, posit);
-	if (!st) yachejka.Pol = Spawn(class'City.testfloor', MyPawn,, posit, angle);
-	else yachejka.Pol = Spawn(class'City.teststair', MyPawn,, posit, angle);
+	yachejka.North = drawHPart(Is2Bit(celll, 3), 3, posit);
+	yachejka.East = drawHPart(Is2Bit(celll, 2), 0, posit);
+	yachejka.South = drawHPart(Is2Bit(celll, 1), 1, posit);
+	yachejka.West = drawHPart(Is2Bit(celll, 0), 2, posit);
+
+	if (!st)
+		yachejka.Pol = Spawn(class'City.testfloor', MyPawn,, posit, angle);
+	else
+		yachejka.Pol = Spawn(class'City.teststair', MyPawn,, posit, angle);
+
 	if (wxPos == 1)
 		yachejka.Lex = drawHOutPart(IsBit(celll, 7)*2+IsBit(celll, 6), 3, posit);
 	else if (wxPos == 2)
 		yachejka.Lex = drawHOutPart(IsBit(celll, 3) * 2 + IsBit(celll,2), 1, posit);
+
 	if (wyPos == 1)
 		yachejka.Wex = drawHOutPart(IsBit(celll, 5) * 2 + IsBit(celll, 4), 0, posit);
 	else if
 		(wyPos == 2) yachejka.Wex = drawHOutPart(IsBit(celll, 1) * 2 + IsBit(celll, 0), 2, posit);
-	
+
 	// пол первого этажа лестницы
 	if ((wzPos == 1) && st)
 		yachejka.Roof=Spawn(class'City.teststairfloor', MyPawn,, posit, angle);
-	
+
 	if (wzPos == 2) // если последний этаж
 	{
 		if (!st)
@@ -209,6 +234,7 @@ private function cell DrawCell(int celll, const out vector posit, int wzPos, int
 		else if
 			(wyPos == 2) yachejka.Grain = Spawn(class'City.testgrain', MyPawn,, posit, qwatrot(1));// нижний правый угол
 	}
+	
 	yachejka.bVisible = true;
 	return yachejka;
 }
@@ -228,6 +254,7 @@ function Gen(Pawn locPawn, optional int len = 10, optional int wid = 10, optiona
 	ACos = Cos(Rotation.Yaw / RadToUnrRot);
 	Initialize();
 	DrawHouse();
+	GenNavNet();
 }
 
 // инициализация здания и выделение памяти (координаты положения актёра - центр здания)
@@ -245,6 +272,7 @@ function gen2(Pawn locPawn,optional int len = 10, optional int wid = 10, optiona
 	ACos = Cos(Rotation.Yaw / RadToUnrRot);
 	initialize();
 	DrawHouse();
+	GenNavNet();
 }
 
 // прорисовка дома
@@ -253,10 +281,10 @@ private function DrawHouse(optional bool full = false)
 	local int i, j, k, wxPos, wyPos, wzPos, celll;
 	local vector pos; // позиция ячейки
 	local vector nav; // вспомогательная переменная для определения положения игрока в относительных координатах здания
-	
+
 	// узнаём позицию и поворот игрока
 	GetPlayerViewPoint(ViewLocation, ViewRotation);
-	
+
 	nav.x = (ViewLocation.x - Location.x) * ACos + (ViewLocation.y - Location.y) * ASin;
 	nav.y = (Location.x - ViewLocation.x) * ASin + (ViewLocation.y - Location.y) * aCos;
 	nav.z = ViewLocation.z - Location.z;
@@ -264,7 +292,7 @@ private function DrawHouse(optional bool full = false)
 	if (SetVisibility(nav)) // если что-то изменилось
 	{
 		GetVisibleMass();
-		
+
 		for (k = 0; k < Height; k++)
 			for (j = 0; j < Width; j++)
 				for (i = 0; i < Length; i++)
@@ -374,7 +402,7 @@ function bool SetVisibility(vector nav)
 	// если дом не далеко
 	if (Vsize(nav) < DistFar)
 	{		
-		// если мы с запада здания
+		// если мы с запада здания ТУТ НАДО УЧЕСТЬ ВОЗМОЖНОСТЬ ПОВОРОТА ЗДАНИЯ!!!
 		if (nav.x < -0.5 * Length * LenW)
 			vis += 2; // +00000010
 		// если мы с востока здания
@@ -398,7 +426,7 @@ function bool SetVisibility(vector nav)
 				vis += 32;
 			}
 		}
-		
+
 		// если дом очень близко
 		if (Vsize(nav) < Dist1)
 		{
@@ -450,6 +478,90 @@ function GetVisibleMass()
 		}
 	}
 }
+
+/*
+ * Так как навигационные маршруты тесно связаны с ячейками здания, то стоило бы
+ * связать генерацию навигационных узлов с генерацией каждой ячейки. Но тогда
+ * пути навигации приходилось бы удалять и создавать заново вместе с ячейками здания
+ * при выгрузке и загрузке в память последних
+*/
+
+
+// создать сеть навигации для здания
+function GenNavNet()
+{
+	local int i, j, k, localCell, addr;
+	local vector pos;
+	local NavNode localNode;
+	// проходим всё здание по циклу
+	for (k = 0; k < Height; k++)
+		for (j = 0; j < Width; j++)
+			for (i = 0; i < Length; i++)
+			{
+				addr = i + j * Length + k * Length * Width;
+				
+				// вычисляем реальные координаты ячейки
+				pos.x = Location.x + (LenW * i - center.x) * aCos - (WidW * j - center.y) * aSin;
+				pos.y = Location.y + (LenW * i - center.x) * aSin + (WidW * j - center.y) * aCos;
+				pos.z = Location.z + HeiW * k + 70; // 70 - высота над полом
+				
+				// находим информацию о ячейке
+				localCell = MyData.NavigationData[4 + addr];
+				
+				// создаём новый узел
+				localNode = new class'Base.NavNode';
+				// располагаем его в центре
+				localNode.Pos = pos;
+				
+				// добавляем необходимые связи с узлами соседних ячеек (только если есть двери)
+				if (Is2Bit(localCell, 2) > 1 && j != 0)
+				{
+					localNode.AddRelation(NavNet[addr - Length]);
+					NavNet[addr - Length].AddRelation(localNode);
+				}
+				if (Is2Bit(localCell, 3) > 1 && i != 0)
+				{
+					localNode.AddRelation(NavNet[addr - 1]);
+					NavNet[addr - 1].AddRelation(localNode);
+				}
+				// связи по лестницам
+				if ((j > 0) && ((i == MyData.NavigationData[0] && j == MyData.NavigationData[1]) || (i == MyData.NavigationData[2] && j == MyData.NavigationData[3])))
+				{
+					localNode.AddRelation(NavNet[addr - Length * Width]);
+					NavNet[addr - Length * Width].AddRelation(localNode);
+				}
+				
+				// заносим узел в массив
+				NavNet[addr] = localNode;
+			}
+}
+
+
+// найти ближайший узел к заданной точке в пределах данного здания
+function NavNode SearchNearNavNode(vector point)
+{
+	local int i, nearestNode;
+	local float minRange;
+	
+	nearestNode = -1;
+	minrange = 100000;
+
+	for (i = 0; i < Length * Width * Height; i++)
+	{
+		if (VSize(point - NavNet[i].pos) < minRange)
+		{
+			minRange = VSize(point - NavNet[i].pos);
+			nearestNode = i;
+		}
+	}
+	
+	if (nearestNode != -1)
+		return NavNet[nearestNode];
+	
+	return None;		
+}
+
+// удалить навигационную сеть для здания
 
 defaultproperties
 {
