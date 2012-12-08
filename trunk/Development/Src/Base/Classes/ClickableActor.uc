@@ -8,6 +8,9 @@ var() MaterialInstanceConstant Parent_MatInst;
 // ID материала для замены InstConst материала
 var() int MatID;
 
+// индекс для обработки через Kismet
+var() int ID;
+
 // Размер свечения объекта (Параметр 'Diffuse') без выделения
 var() float NormalMatInstFloat;
 // Размер свечения объекта (Параметр 'Diffuse') при выделении

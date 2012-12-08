@@ -200,6 +200,9 @@ function ChangeRange(float mod) {
 // кликнули по объекту
 function ClickToAct(ClickableActor clAct)
 {
+	local SequenceObject individualEvent;
+	local array<SequenceObject> eventList;
+	
 	if (ministar(clAct) != None && CurrentView == MP_Galaxy) // звезда в галактике
 	{
 		//CurrentView = MP_System;
@@ -215,12 +218,26 @@ function ClickToAct(ClickableActor clAct)
 		CurrentView = MP_System;
 		GoToState('PlayerWaiting', 'MoveTCam');
 	}
-	else if (UnPlanet(clAct) != None)  // планета в системе
+	else if (UnPlanet(clAct) != None) // планета в системе
 	{
 		CurrentView = MP_Planet;
 		NewFocusAct = clAct;
 		CurrPlan = UnPlanet(clAct);
 		GoToState('PlayerWaiting', 'ChangePlanet');
+	}
+	
+	`log("clicked");
+	WorldInfo.GetGameSequence().FindSeqObjectsByClass(class'SeqEvent_ClickTouchingActor', true, eventList);
+	foreach eventList(individualEvent)
+	{
+		`log("search event ...");
+		if (individualEvent.IsA('SeqEvent_ClickTouchingActor'))
+		{
+			`log("take event");
+			SeqEvent_ClickTouchingActor(individualEvent).Index = clAct.ID;
+			SequenceEvent(individualEvent).CheckActivate(self, Pawn);
+			break;
+		}
 	}
 	
 	UpdCamRot();
