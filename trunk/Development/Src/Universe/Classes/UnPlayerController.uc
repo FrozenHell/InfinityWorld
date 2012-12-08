@@ -97,22 +97,40 @@ exec function getnearnavnode()
 {
 	local vector viewLocation;
 	local rotator viewRotation;
-	local NavNode node;
+	local NavNode node, minNode, minMinNode;
 	local ministar star;
-	local int i;
+	local int i, j, k;
 	
 	// ищем координаты игрока
 	GetPlayerViewPoint(viewLocation, viewRotation);
 	
 	// ищем ближайшую ноду и создаём там светящуюся точку
 	node = house.SearchNearNavNode(viewLocation);
-	star = Spawn(class'City.ministar', UnPawn(Owner),, node.pos, UnrRot(0, 0, 0));
+	star = Spawn(class'City.ministar', UnPawn(Owner),, node.Location, UnrRot(0, 0, 0));
 	star.Change(); // подсветить белым
 	
 	// показать связи
 	for (i = 0; i < node.LinksSize; i++)
 	{
-		Spawn(class'City.ministar', UnPawn(Owner),, node.pos - (node.pos - node.Links[i].pos)/3, UnrRot(0, 0, 0));
+		minNode = node.Links[i];
+		Spawn(class'City.ministar', UnPawn(Owner),, node.Location - (node.Location - minNode.Location)/3, UnrRot(0, 0, 0));
+		
+		star = Spawn(class'City.ministar', UnPawn(Owner),, minNode.Location, UnrRot(0, 0, 0));
+		star.Change(); // подсветить белым
+		
+		for (j = 0; j < minNode.LinksSize; j++)
+		{
+			minMinNode = minNode.Links[j];
+			Spawn(class'City.ministar', UnPawn(Owner),, minNode.Location - (minNode.Location - minMinNode.Location)/3, UnrRot(0, 0, 0));
+			
+			star = Spawn(class'City.ministar', UnPawn(Owner),, minMinNode.Location, UnrRot(0, 0, 0));
+			star.Change(); // подсветить белым
+		
+			for (k = 0; k < minMinNode.LinksSize; k++)
+			{
+				Spawn(class'City.ministar', UnPawn(Owner),, minMinNode.Location - (minMinNode.Location - minMinNode.Links[k].Location)/3, UnrRot(0, 0, 0));
+			}
+		}
 	}
 }
 

@@ -508,10 +508,8 @@ function GenNavNet()
 				// находим информацию о €чейке
 				localCell = MyData.NavigationData[4 + addr];
 				
-				// создаЄм новый узел
-				localNode = new class'Base.NavNode';
-				// располагаем его в центре
-				localNode.Pos = pos;
+				// создаЄм новый узел и располагаем его в центре
+				localNode = Spawn(class'Base.NavNode', MyPawn,, pos, rot(0, 0, 0));
 				
 				// добавл€ем необходимые св€зи с узлами соседних €чеек (только если есть двери)
 				if (Is2Bit(localCell, 2) > 1 && j != 0)
@@ -548,9 +546,9 @@ function NavNode SearchNearNavNode(vector point)
 
 	for (i = 0; i < Length * Width * Height; i++)
 	{
-		if (VSize(point - NavNet[i].pos) < minRange)
+		if (VSize(point - NavNet[i].Location) < minRange)
 		{
-			minRange = VSize(point - NavNet[i].pos);
+			minRange = VSize(point - NavNet[i].Location);
 			nearestNode = i;
 		}
 	}
