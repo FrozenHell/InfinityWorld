@@ -60,9 +60,9 @@ exec function drawhouse(optional int seed = 0)
 {
 	if (!bHouseGenerated)
 	{
-		House = Spawn(class'City.myhouse', UnPawn(Owner),, vect(0, -100, -40),rot(0, 0, 0));
+		House = Spawn(class'City.myhouse', UnPawn(Owner),, vect(0, -100, 210),rot(0, 0, 0));
 		House.GetPlayerViewPoint = GetPlayerViewPoint;
-		House.gen2(UnPawn(Owner), 4, 4, 4, seed + 1);
+		House.gen2(UnPawn(Owner), 4, 4, 2, seed + 1);
 		bHouseGenerated = true;
 	}
 }
@@ -75,7 +75,7 @@ exec function genmorehouses()
 	{
 		for (j = 0; j < 4; j++)
 		{
-			how = Spawn(class'City.myhouse', UnPawn(Owner),, vec(i * 5000, j * 5000, -40), UnrRot(0, 0, 0));
+			how = Spawn(class'City.myhouse', UnPawn(Owner),, vec(i * 5000, j * 5000, 210), UnrRot(0, 0, 0));
 			how.GetPlayerViewPoint = GetPlayerViewPoint;
 			how.gen2(UnPawn(Owner), 5, 5, 10, i + j);
 		}
@@ -95,43 +95,62 @@ exec function clearhouse()
 // тестируем навигационные сети
 exec function getnearnavnode()
 {
-	local vector viewLocation;
-	local rotator viewRotation;
 	local NavNode node, minNode, minMinNode;
 	local ministar star;
 	local int i, j, k;
-	
-	// ищем координаты игрока
-	GetPlayerViewPoint(viewLocation, viewRotation);
-	
+
 	// ищем ближайшую ноду и создаём там светящуюся точку
-	node = house.SearchNearNavNode(viewLocation);
-	star = Spawn(class'City.ministar', UnPawn(Owner),, node.Location, UnrRot(0, 0, 0));
+	node = SearchNearNavNode();
+	star = Spawn(class'City.ministar', UnPawn(Owner),, node.Location, rot(0, 0, 0));
 	star.Change(); // подсветить белым
-	
+
 	// показать связи
 	for (i = 0; i < node.LinksSize; i++)
 	{
 		minNode = node.Links[i];
-		Spawn(class'City.ministar', UnPawn(Owner),, node.Location - (node.Location - minNode.Location)/3, UnrRot(0, 0, 0));
-		
+		Spawn(class'City.ministar', UnPawn(Owner),, node.Location - (node.Location - minNode.Location)/3, rot(0, 0, 0));
+
 		star = Spawn(class'City.ministar', UnPawn(Owner),, minNode.Location, UnrRot(0, 0, 0));
 		star.Change(); // подсветить белым
-		
+
 		for (j = 0; j < minNode.LinksSize; j++)
 		{
 			minMinNode = minNode.Links[j];
-			Spawn(class'City.ministar', UnPawn(Owner),, minNode.Location - (minNode.Location - minMinNode.Location)/3, UnrRot(0, 0, 0));
-			
+			Spawn(class'City.ministar', UnPawn(Owner),, minNode.Location - (minNode.Location - minMinNode.Location)/3, rot(0, 0, 0));
+
 			star = Spawn(class'City.ministar', UnPawn(Owner),, minMinNode.Location, UnrRot(0, 0, 0));
 			star.Change(); // подсветить белым
-		
+
 			for (k = 0; k < minMinNode.LinksSize; k++)
 			{
-				Spawn(class'City.ministar', UnPawn(Owner),, minMinNode.Location - (minMinNode.Location - minMinNode.Links[k].Location)/3, UnrRot(0, 0, 0));
+				Spawn(class'City.ministar', UnPawn(Owner),, minMinNode.Location - (minMinNode.Location - minMinNode.Links[k].Location)/3, rot(0, 0, 0));
 			}
 		}
 	}
+}
+
+function NavNode SearchNearNavNode()
+{
+	local vector viewLocation;
+	local rotator viewRotation;
+	local NavNode locNode, NearestNode;
+	local float minRange;
+	
+	// ищем координаты игрока
+	GetPlayerViewPoint(viewLocation, viewRotation);
+
+	minRange = 100000.0;
+
+	foreach AllActors(class'NavNode', locNode)
+	{
+		if (VSize(viewLocation - locNode.Location) < minRange)
+		{
+			minRange = VSize(viewLocation - locNode.Location);
+			NearestNode = locNode;
+		}
+	}
+	
+	return NearestNode;
 }
 
 exec function gen_ps()

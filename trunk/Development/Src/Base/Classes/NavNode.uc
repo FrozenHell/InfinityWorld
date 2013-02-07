@@ -7,7 +7,6 @@
 class NavNode extends Actor;
 
 var float g, h, f;
-var int Index;
 var array<NavNode> Links;
 var NavNode CameFrom;
 var int LinksSize;
@@ -15,7 +14,7 @@ var int LinksSize;
 function AddRelation(NavNode node)
 {
 	if (Location.x == 0.0 && Location.y == 0.0 && Location.z == 0.0)
-		`log("error");
+		`warn("Ќода св€зана с собой или нодой в той-же точке!");
 	Links[LinksSize] = node;
 	LinksSize++;
 }
