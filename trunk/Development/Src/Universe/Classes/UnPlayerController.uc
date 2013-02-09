@@ -60,7 +60,7 @@ exec function drawhouse(optional int seed = 0)
 {
 	if (!bHouseGenerated)
 	{
-		House = Spawn(class'City.myhouse', UnPawn(Owner),, vect(0, -100, 210),rot(0, 0, 0));
+		House = Spawn(class'City.myhouse', UnPawn(Owner),, vect(0, -100, 210), rot(0, 0, 0));
 		House.GetPlayerViewPoint = GetPlayerViewPoint;
 		House.gen2(UnPawn(Owner), 4, 4, 2, seed + 1);
 		bHouseGenerated = true;
@@ -90,6 +90,14 @@ exec function clearhouse()
 		bHouseGenerated = false;
 		say("Clearing House");
 	}
+}
+
+exec function drawtrihouse(optional int type = 0, optional int size = 1)
+{
+	local TriangleHouse lochouse;
+	lochouse = Spawn(class'City.TriangleHouse', UnPawn(Owner),, vect(0, -100, 0), rot(0, 0, 0));
+	lochouse.GetPlayerViewPoint = GetPlayerViewPoint;
+	lochouse.Gen(UnPawn(Owner), 4, 4, 15, type, size, 1);
 }
 
 // тестируем навигационные сети
@@ -135,7 +143,7 @@ function NavNode SearchNearNavNode()
 	local rotator viewRotation;
 	local NavNode locNode, NearestNode;
 	local float minRange;
-	
+
 	// ищем координаты игрока
 	GetPlayerViewPoint(viewLocation, viewRotation);
 
@@ -149,7 +157,7 @@ function NavNode SearchNearNavNode()
 			NearestNode = locNode;
 		}
 	}
-	
+
 	return NearestNode;
 }
 

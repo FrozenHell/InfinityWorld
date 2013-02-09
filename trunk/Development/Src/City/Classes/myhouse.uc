@@ -257,7 +257,7 @@ function Gen(Pawn locPawn, optional int len = 10, optional int wid = 10, optiona
 }
 
 // инициализация здания и выделение памяти (координаты положения актёра - центр здания)
-function gen2(Pawn locPawn,optional int len = 10, optional int wid = 10, optional int hei = 10, optional int seed = 0)
+function gen2(Pawn locPawn, optional int len = 10, optional int wid = 10, optional int hei = 10, optional int seed = 0)
 {
 	Length = len;
 	Width = wid;
