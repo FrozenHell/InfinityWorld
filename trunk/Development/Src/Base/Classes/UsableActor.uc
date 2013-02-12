@@ -11,12 +11,36 @@ class UsableActor extends Actor
 	placeable
 	implements(Useable);
 
+// Игровая модель для объекта
 var() const editconst StaticMeshComponent	StaticMeshComponent;
+
+// UsableActor_ID для Event кисмета "Use UsabeActor"
+var() int Kismet_ID;
 
 public function Use(Pawn uInstigator)
 {
-	`log(Name@"был использован");
+	// итератор foreach
+	local SequenceObject individualEvent;
+	// все объекты кисмета обрабатывающие использование UsableActor
+	local array<SequenceObject> eventList;
+	
+	// Воспроизвести звук использования
 	PlaySound(SoundCue'A_Gameplay.Gameplay.MessageBeepCue', true);
+	
+	// ищем все обработчики использования UsableActor
+	WorldInfo.GetGameSequence().FindSeqObjectsByClass(class'SeqEvent_UseUsableActor', true, eventList);
+	// Ищем наш SeqEvent в кисмете
+	foreach eventList(individualEvent)
+	{
+		// если это обработчик именно этого актёра
+		if (individualEvent.IsA('SeqEvent_UseUsableActor') && SeqEvent_UseUsableActor(individualEvent).UsableActor_ID == Kismet_ID)
+		{
+			// активируем Event
+			SequenceEvent(individualEvent).CheckActivate(self, uInstigator);
+			// выходим, обработав только один Event
+			break;
+		}
+	}
 }
 
 defaultproperties

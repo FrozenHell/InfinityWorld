@@ -10,6 +10,14 @@ var MyGalaxy Galaxy;
 var MyHouse House;
 var bool bGalaxyGenerated, bHouseGenerated;
 
+// переменные для работы с тестовым уровнем TestHouse
+var int TestHouseType;
+var int TestHouseHeight;
+var bool bTestHouseCreated;
+var Actor TestHouse;
+var int TestHouseSeed;
+var float TestHouseAngle;
+
 exec function rotator UnrRot(float pitch, float yaw, float roll)
 {
 	local rotator rota;
@@ -75,7 +83,7 @@ exec function genmorehouses()
 	{
 		for (j = 0; j < 4; j++)
 		{
-			how = Spawn(class'City.myhouse', UnPawn(Owner),, vec(i * 5000, j * 5000, 210), UnrRot(0, 0, 0));
+			how = Spawn(class'City.myhouse', UnPawn(Owner),, vec(i * 5000, j * 5000, 210), rot(0, 0, 0));
 			how.GetPlayerViewPoint = GetPlayerViewPoint;
 			how.gen2(UnPawn(Owner), 5, 5, 10, i + j);
 		}
@@ -168,6 +176,173 @@ exec function gen_ps()
 	PS1.generate(UnPawn(Owner), 1);
 }
 
+// обработчики нажатий на кнопки на тестовом уровне
+exec function BtnCreate()
+{
+	if (!bTestHouseCreated)
+	{
+		switch (TestHouseType)
+		{
+			case 0:
+				TestHouse = Spawn(class'City.MyHouse', UnPawn(Owner),, vect(0, -10000, 0), UnrRot(0, TestHouseAngle, 0));
+				MyHouse(TestHouse).GetPlayerViewPoint = GetPlayerViewPoint;
+				MyHouse(TestHouse).gen2(UnPawn(Owner), 4, 4, TestHouseHeight, TestHouseSeed);
+				break;
+			case 1:
+			case 2:
+			case 3:
+			case 4:
+				TestHouse = Spawn(class'City.TriangleHouse', UnPawn(Owner),, vect(0, -10000, 0), UnrRot(0, TestHouseAngle, 0));
+				TriangleHouse(TestHouse).GetPlayerViewPoint = GetPlayerViewPoint;
+				TriangleHouse(TestHouse).Gen(UnPawn(Owner), 4, 4, TestHouseHeight, TestHouseType - 1, 5, TestHouseSeed);
+				break;
+			default:
+				`warn("Выбран неверный тип при построении тестового здания");
+				break;
+		}
+		
+		bTestHouseCreated = true;
+	}
+}
+
+exec function BtnRemove()
+{
+	if (bTestHouseCreated)
+	{
+		TestHouse.Destroy();
+		bTestHouseCreated = false;
+	}
+}
+
+exec function BtnFlrInc()
+{
+	if (TestHouseHeight < 15)
+	{
+		if (bTestHouseCreated)
+		{
+			BtnRemove();
+			TestHouseHeight++;
+			BtnCreate();
+		}
+		else
+			TestHouseHeight++;
+	}
+	Say("Height"@TestHouseHeight@"floors");
+}
+
+exec function BtnFlrSub()
+{
+	if (TestHouseHeight > 2)
+	{
+		if (bTestHouseCreated)
+		{
+			BtnRemove();
+			TestHouseHeight--;
+			BtnCreate();
+		}
+		else
+			TestHouseHeight--;
+	}
+	Say("Height"@TestHouseHeight@"floors");
+}
+
+exec function BtnTypeInc()
+{
+	if (TestHouseType < 4)
+	{
+		if (bTestHouseCreated)
+		{
+			BtnRemove();
+			TestHouseType++;
+			BtnCreate();
+		}
+		else
+			TestHouseType--;
+	}
+	Say("Type"@TestHouseType);
+}
+
+exec function BtnTypeSub()
+{
+	if (TestHouseType > 0)
+	{
+		if (bTestHouseCreated)
+		{
+			BtnRemove();
+			TestHouseType--;
+			BtnCreate();
+		}
+		else
+			TestHouseType--;
+	}
+	Say("Type"@TestHouseType);
+}
+
+exec function BtnAngleInc()
+{
+	if (TestHouseAngle < 360.0)
+	{
+		if (bTestHouseCreated)
+		{
+			BtnRemove();
+			TestHouseAngle += 10.0;
+			BtnCreate();
+		}
+		else
+			TestHouseAngle = 0.0;
+	}
+	Say("Angle"@TestHouseAngle);
+}
+
+exec function BtnAngleSub()
+{
+	if (TestHouseAngle > 0)
+	{
+		if (bTestHouseCreated)
+		{
+			BtnRemove();
+			TestHouseAngle -= 10.0;
+			BtnCreate();
+		}
+		else
+			TestHouseAngle = 350.0;
+	}
+	Say("Angle"@TestHouseAngle);
+}
+
+exec function BtnSeedInc()
+{
+	if (TestHouseSeed < 20000)
+	{
+		if (bTestHouseCreated)
+		{
+			BtnRemove();
+			TestHouseSeed++;
+			BtnCreate();
+		}
+		else
+			TestHouseSeed--;
+	}
+	Say("Seed"@TestHouseSeed);
+}
+
+exec function BtnSeedSub()
+{
+	if (TestHouseSeed > 0)
+	{
+		if (bTestHouseCreated)
+		{
+			BtnRemove();
+			TestHouseSeed--;
+			BtnCreate();
+		}
+		else
+			TestHouseSeed--;
+	}
+	Say("Seed"@TestHouseSeed);
+}
+
+
 // нажали клавишу "Использовать"
 exec function use_actor()
 {
@@ -194,4 +369,9 @@ defaultproperties
 	Name="Default__UnPlayerController"
 	bGalaxyGenerated = false
 	bHouseGenerated = false
+	TestHouseType = 0
+	TestHouseHeight = 10
+	bTestHouseCreated = false
+	TestHouseSeed = 0
+	TestHouseAngle = 0.0
 }
