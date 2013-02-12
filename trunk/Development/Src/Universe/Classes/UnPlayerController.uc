@@ -10,7 +10,7 @@ var MyGalaxy Galaxy;
 var MyHouse House;
 var bool bGalaxyGenerated, bHouseGenerated;
 
-// РїРµСЂРµРјРµРЅРЅС‹Рµ РґР»СЏ СЂР°Р±РѕС‚С‹ СЃ С‚РµСЃС‚РѕРІС‹Рј СѓСЂРѕРІРЅРµРј TestHouse
+// переменные для работы с тестовым уровнем TestHouse
 var int TestHouseType;
 var int TestHouseHeight;
 var bool bTestHouseCreated;
@@ -108,26 +108,26 @@ exec function drawtrihouse(optional int type = 0, optional int size = 1)
 	lochouse.Gen(UnPawn(Owner), 4, 4, 15, type, size, 1);
 }
 
-// С‚РµСЃС‚РёСЂСѓРµРј РЅР°РІРёРіР°С†РёРѕРЅРЅС‹Рµ СЃРµС‚Рё
+// тестируем навигационные сети
 exec function getnearnavnode()
 {
 	local NavNode node, minNode, minMinNode;
 	local ministar star;
 	local int i, j, k;
 
-	// РёС‰РµРј Р±Р»РёР¶Р°Р№С€СѓСЋ РЅРѕРґСѓ Рё СЃРѕР·РґР°С‘Рј С‚Р°Рј СЃРІРµС‚СЏС‰СѓСЋСЃСЏ С‚РѕС‡РєСѓ
+	// ищем ближайшую ноду и создаём там светящуюся точку
 	node = SearchNearNavNode();
 	star = Spawn(class'City.ministar', UnPawn(Owner),, node.Location, rot(0, 0, 0));
-	star.Change(); // РїРѕРґСЃРІРµС‚РёС‚СЊ Р±РµР»С‹Рј
+	star.Change(); // подсветить белым
 
-	// РїРѕРєР°Р·Р°С‚СЊ СЃРІСЏР·Рё
+	// показать связи
 	for (i = 0; i < node.LinksSize; i++)
 	{
 		minNode = node.Links[i];
 		Spawn(class'City.ministar', UnPawn(Owner),, node.Location - (node.Location - minNode.Location)/3, rot(0, 0, 0));
 
 		star = Spawn(class'City.ministar', UnPawn(Owner),, minNode.Location, UnrRot(0, 0, 0));
-		star.Change(); // РїРѕРґСЃРІРµС‚РёС‚СЊ Р±РµР»С‹Рј
+		star.Change(); // подсветить белым
 
 		for (j = 0; j < minNode.LinksSize; j++)
 		{
@@ -135,7 +135,7 @@ exec function getnearnavnode()
 			Spawn(class'City.ministar', UnPawn(Owner),, minNode.Location - (minNode.Location - minMinNode.Location)/3, rot(0, 0, 0));
 
 			star = Spawn(class'City.ministar', UnPawn(Owner),, minMinNode.Location, UnrRot(0, 0, 0));
-			star.Change(); // РїРѕРґСЃРІРµС‚РёС‚СЊ Р±РµР»С‹Рј
+			star.Change(); // подсветить белым
 
 			for (k = 0; k < minMinNode.LinksSize; k++)
 			{
@@ -152,7 +152,7 @@ function NavNode SearchNearNavNode()
 	local NavNode locNode, NearestNode;
 	local float minRange;
 
-	// РёС‰РµРј РєРѕРѕСЂРґРёРЅР°С‚С‹ РёРіСЂРѕРєР°
+	// ищем координаты игрока
 	GetPlayerViewPoint(viewLocation, viewRotation);
 
 	minRange = 100000.0;
@@ -176,7 +176,7 @@ exec function gen_ps()
 	PS1.generate(UnPawn(Owner), 1);
 }
 
-// РѕР±СЂР°Р±РѕС‚С‡РёРєРё РЅР°Р¶Р°С‚РёР№ РЅР° РєРЅРѕРїРєРё РЅР° С‚РµСЃС‚РѕРІРѕРј СѓСЂРѕРІРЅРµ
+// обработчики нажатий на кнопки на тестовом уровне
 exec function BtnCreate()
 {
 	if (!bTestHouseCreated)
@@ -197,7 +197,7 @@ exec function BtnCreate()
 				TriangleHouse(TestHouse).Gen(UnPawn(Owner), 4, 4, TestHouseHeight, TestHouseType - 1, 5, TestHouseSeed);
 				break;
 			default:
-				`warn("Р’С‹Р±СЂР°РЅ РЅРµРІРµСЂРЅС‹Р№ С‚РёРї РїСЂРё РїРѕСЃС‚СЂРѕРµРЅРёРё С‚РµСЃС‚РѕРІРѕРіРѕ Р·РґР°РЅРёСЏ");
+				`warn("Выбран неверный тип при построении тестового здания");
 				break;
 		}
 		
@@ -343,23 +343,23 @@ exec function BtnSeedSub()
 }
 
 
-// РЅР°Р¶Р°Р»Рё РєР»Р°РІРёС€Сѓ "РСЃРїРѕР»СЊР·РѕРІР°С‚СЊ"
+// нажали клавишу "Использовать"
 exec function use_actor()
 {
 	local Actor hitActor;
 	local vector hitNormal, hitLocation;
 	local vector viewLocation;
 	local rotator viewRotation;
-	// СЂР°СЃСЃС‚РѕСЏРЅРёРµ РЅР° РєРѕС‚РѕСЂРѕРј РјРѕР¶РµРј РёСЃРїРѕР»СЊР·РѕРІР°С‚СЊ РѕР±СЉРµРєС‚С‹
+	// расстояние на котором можем использовать объекты
 	local float maxRange;
 	maxRange = 100;
 	GetPlayerViewPoint(viewLocation, viewRotation);
 	HitActor = Trace(hitLocation, hitNormal, viewLocation + maxRange * vector(viewRotation), viewLocation, true);
 
-	// РµСЃР»Рё РјС‹ РЅР°Р¶Р°Р»Рё РЅР° Р°РєС‚С‘СЂР°, РєРѕС‚РѕСЂС‹Р№ РјРѕР¶РЅРѕ РёСЃРїРѕР»СЊР·РѕРІР°С‚СЊ
+	// если мы нажали на актёра, который можно использовать
 	if (Useable(HitActor) != None)
 	{
-		// РёСЃРїРѕР»СЊР·РѕРІР°С‚СЊ
+		// использовать
 		Useable(HitActor).Use(Pawn);
 	}
 }

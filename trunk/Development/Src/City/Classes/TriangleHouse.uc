@@ -6,7 +6,7 @@
  */
 class TriangleHouse extends Actor;
 
-// Р±Р»РѕРєРё Р·РґР°РЅРёСЏ
+// блоки здания
 var array<MyHouse> Blocks;
 
 var Actor MyPawn;
@@ -18,15 +18,15 @@ var int HouseType;
 var float Length, Width, Height, LenW, WidW, HeiW;
 var float WallWidth;
 
-// РґРµР»РµРіР°С‚ РґР»СЏ РѕРґРЅРѕРёРјС‘РЅРЅРѕР№ С„СѓРЅРєС†РёРё РёР· РїР»РµРµСЂРєРѕРЅС‚СЂРѕР»Р»РµСЂР°
+// делегат для одноимённой функции из плеерконтроллера
 delegate GetPlayerViewPoint(out vector out_Location, out Rotator out_rotation);
 
-// --------- С„СѓРЅРєС†РёРё ---------
+// --------- функции ---------
 
 event Destroyed()
 {
 	local MyHouse localBlock;
-	// СѓРЅРёС‡С‚РѕР¶Р°РµРј РІСЃРµ Р±Р»РѕРєРё
+	// уничтожаем все блоки
 	foreach Blocks(localBlock)
 		localBlock.Destroy();
 
@@ -69,7 +69,7 @@ function DrawBloxx(float posX, float posY, float angle, int type)
 }
 
 
-function DrawTriHousePart(float posX, float posY, float angle, int type, int next, optional int deep = 0) // РµСЃР»Рё РµСЃС‚СЊ РєРѕСЃСЏРєРё, СѓР±РµСЂРёС‚Рµ optional Рё РѕС‚РєРѕРјРїРёР»РёСЂСѓР№С‚Рµ
+function DrawTriHousePart(float posX, float posY, float angle, int type, int next, optional int deep = 0) // если есть косяки, уберите optional и откомпилируйте
 {
 
 	//DrawCenter(X, Y, angle);

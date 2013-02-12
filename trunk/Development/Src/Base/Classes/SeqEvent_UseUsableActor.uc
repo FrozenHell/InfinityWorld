@@ -6,7 +6,7 @@
  */
 class SeqEvent_UseUsableActor extends SequenceEvent;
 
-// Kismet_ID РѕР±СЂРѕР±Р°С‚С‹РІР°РµРјРѕРіРѕ РѕР±СЉРµРєС‚Р°
+// Kismet_ID обробатываемого объекта
 var() int UsableActor_ID;
 
 defaultproperties
