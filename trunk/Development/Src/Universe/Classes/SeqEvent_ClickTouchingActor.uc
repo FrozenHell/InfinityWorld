@@ -6,11 +6,11 @@
  */
 class SeqEvent_ClickTouchingActor extends SequenceEvent;
 
-var() int Index;
+// Kismet_ID обробатываемого объекта
+var() int ClickableActor_ID;
 
 defaultproperties
 {
-	VariableLinks(0)=(ExpectedType=class'SeqVar_Int', LinkDesc="Index", bWriteable=true, PropertyName=Index)
 	ObjName = "Click Menu Item"
 	ObjCategory = "Other"
 	MaxTriggerCount = 0

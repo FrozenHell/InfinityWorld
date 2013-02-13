@@ -9,7 +9,7 @@ var() MaterialInstanceConstant Parent_MatInst;
 var() int MatID;
 
 // индекс для обработки через Kismet
-var() int ID;
+var() int Kismet_ID;
 
 // Размер свечения объекта (Параметр 'Diffuse') без выделения
 var() float NormalMatInstFloat;

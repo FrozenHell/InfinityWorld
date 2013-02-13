@@ -226,15 +226,12 @@ function ClickToAct(ClickableActor clAct)
 		GoToState('PlayerWaiting', 'ChangePlanet');
 	}
 	
-	`log("clicked");
+	// передача события в Kismet
 	WorldInfo.GetGameSequence().FindSeqObjectsByClass(class'SeqEvent_ClickTouchingActor', true, eventList);
 	foreach eventList(individualEvent)
 	{
-		`log("search event ...");
-		if (individualEvent.IsA('SeqEvent_ClickTouchingActor'))
+		if (individualEvent.IsA('SeqEvent_ClickTouchingActor') && SeqEvent_ClickTouchingActor(individualEvent).ClickableActor_ID == clAct.Kismet_ID)
 		{
-			`log("take event");
-			SeqEvent_ClickTouchingActor(individualEvent).Index = clAct.ID;
 			SequenceEvent(individualEvent).CheckActivate(self, Pawn);
 			break;
 		}
