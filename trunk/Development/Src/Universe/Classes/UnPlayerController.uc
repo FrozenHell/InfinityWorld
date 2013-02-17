@@ -18,6 +18,11 @@ var Actor TestHouse;
 var int TestHouseSeed;
 var float TestHouseAngle;
 
+// для режима охотник-жертва
+var GFxMovie_HunterHUD GFxMovie;
+var Pawn Pray;
+var bool bHunt;
+
 exec function rotator UnrRot(float pitch, float yaw, float roll)
 {
 	local rotator rota;
@@ -184,15 +189,15 @@ exec function BtnCreate()
 		switch (TestHouseType)
 		{
 			case 0:
-				TestHouse = Spawn(class'City.MyHouse', UnPawn(Owner),, vect(0, -10000, 0), UnrRot(0, TestHouseAngle, 0));
+				TestHouse = Spawn(class'City.MyHouse', UnPawn(Owner),, vect(0, -10000, -40), UnrRot(0, TestHouseAngle, 0));
 				MyHouse(TestHouse).GetPlayerViewPoint = GetPlayerViewPoint;
-				MyHouse(TestHouse).gen2(UnPawn(Owner), 4, 4, TestHouseHeight, TestHouseSeed);
+				MyHouse(TestHouse).gen2(UnPawn(Owner), 10, 10, TestHouseHeight, TestHouseSeed);
 				break;
 			case 1:
 			case 2:
 			case 3:
 			case 4:
-				TestHouse = Spawn(class'City.TriangleHouse', UnPawn(Owner),, vect(0, -10000, 0), UnrRot(0, TestHouseAngle, 0));
+				TestHouse = Spawn(class'City.TriangleHouse', UnPawn(Owner),, vect(0, -10000, -40), UnrRot(0, TestHouseAngle, 0));
 				TriangleHouse(TestHouse).GetPlayerViewPoint = GetPlayerViewPoint;
 				TriangleHouse(TestHouse).Gen(UnPawn(Owner), 4, 4, TestHouseHeight, TestHouseType - 1, 5, TestHouseSeed);
 				break;
@@ -200,7 +205,7 @@ exec function BtnCreate()
 				`warn("Выбран неверный тип при построении тестового здания");
 				break;
 		}
-		
+
 		bTestHouseCreated = true;
 	}
 }
@@ -257,7 +262,7 @@ exec function BtnTypeInc()
 			BtnCreate();
 		}
 		else
-			TestHouseType--;
+			TestHouseType++;
 	}
 	Say("Type"@TestHouseType);
 }
@@ -280,30 +285,41 @@ exec function BtnTypeSub()
 
 exec function BtnAngleInc()
 {
-	if (TestHouseAngle < 360.0)
+	if (bTestHouseCreated)
 	{
-		if (bTestHouseCreated)
-		{
-			BtnRemove();
+		BtnRemove();
+		if (TestHouseAngle < 360.0)
 			TestHouseAngle += 10.0;
-			BtnCreate();
-		}
+		else
+			TestHouseAngle = 0.0;
+		BtnCreate();
+	}
+	else
+	{
+		if (TestHouseAngle < 360.0)
+			TestHouseAngle += 10.0;
 		else
 			TestHouseAngle = 0.0;
 	}
+
 	Say("Angle"@TestHouseAngle);
 }
 
 exec function BtnAngleSub()
 {
-	if (TestHouseAngle > 0)
+	if (bTestHouseCreated)
 	{
-		if (bTestHouseCreated)
-		{
-			BtnRemove();
+		BtnRemove();
+		if (TestHouseAngle > 0)
 			TestHouseAngle -= 10.0;
-			BtnCreate();
-		}
+		else
+			TestHouseAngle = 350.0;
+		BtnCreate();
+	}
+	else
+	{
+		if (TestHouseAngle > 0)
+			TestHouseAngle -= 10.0;
 		else
 			TestHouseAngle = 350.0;
 	}
@@ -321,7 +337,7 @@ exec function BtnSeedInc()
 			BtnCreate();
 		}
 		else
-			TestHouseSeed--;
+			TestHouseSeed++;
 	}
 	Say("Seed"@TestHouseSeed);
 }
@@ -341,7 +357,6 @@ exec function BtnSeedSub()
 	}
 	Say("Seed"@TestHouseSeed);
 }
-
 
 // нажали клавишу "Использовать"
 exec function use_actor()
@@ -364,6 +379,45 @@ exec function use_actor()
 	}
 }
 
+exec function StartHunt()
+{
+	local Pawn locPray;
+	GFxMovie = new Class'Base.GFxMovie_HunterHUD';
+	GFxMovie.initialize(1);
+	foreach AllActors(class'Pawn', locPray)
+	{
+		if (locPray!=Pawn)
+		{
+			Pray = locPray;
+			break;
+		}
+	}
+
+	bHunt = true;
+}
+
+function UpdateRotation(float fDeltaTime)
+{
+	local vector viewLocation;
+	local rotator viewRotation;
+	local float zShift;
+
+	if (bHunt)
+	{
+		// ищем координаты игрока
+		GetPlayerViewPoint(viewLocation, viewRotation);
+
+		// ищем разницу в высоте
+		zShift = Pray.Location.z - viewLocation.z;
+		if (abs(zShift) < 120.0)
+			zShift = 0;
+
+		// поворачиваем стрелку в сторону жертвы
+		GFxMovie.Redraw((rotator(viewLocation - Pray.Location).Yaw - viewRotation.Yaw) / RadToUnrRot, zShift);
+	}
+	Super.UpdateRotation(fDeltaTime);
+}
+
 defaultproperties
 {
 	Name="Default__UnPlayerController"
@@ -374,4 +428,5 @@ defaultproperties
 	bTestHouseCreated = false
 	TestHouseSeed = 0
 	TestHouseAngle = 0.0
+	bHunt = false
 }

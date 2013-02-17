@@ -90,7 +90,7 @@ simulated event PostBeginPlay()
 
 event Destroyed()
 {
-	// тут должна вызываться функция очистки узлов
+	ClearNavNet();
 	Clear();
 	super.Destroyed();
 }
@@ -120,6 +120,8 @@ function Clear()
 		}
 		Visiblity = 0;
 	}
+	// очистка массива Cells
+	Cells.Remove(0, Cells.Length);
 }
 
 // возвращает 1 или 0 (бит числа "а" в позиции "b")
@@ -594,6 +596,16 @@ static function BindNodes(NavNode A, NavNode B)
 {
 	A.AddRelation(B);
 	B.AddRelation(A);
+}
+
+function ClearNavNet()
+{
+	local NavNode localNode;
+	// удаляем все узлы здания
+	foreach NavList(localNode)
+		localNode.Destroy();
+	// очищаем массив NavList
+	NavList.Remove(0, NavList.Length);
 }
 
 /*

@@ -9,7 +9,7 @@ var UTWeap_RocketLauncher RL;
 var array <NavNode> _OpenSet;
 var array <NavNode> _ClosedSet;
 
-var NavNode _NavNode; 
+var NavNode _NavNode;
 
 /*
 *	event PostBeginPlay()
@@ -77,15 +77,16 @@ END:
 }
 
 // бот видит игрока
-event SeePlayer(Pawn Seen) {
-
+event SeePlayer(Pawn Seen)
+{
 	Enemy1 = Seen;
 	`log("Бот: вижу врага!");
 	GoToPoint(Enemy1.Location);
 }
 
 // бот слышит шум
-event HearNoise(float Loudness, Actor NoiseMaker, optional Name NoiseType) {
+event HearNoise(float Loudness, Actor NoiseMaker, optional Name NoiseType)
+{
 	LastEnemyPos = NoiseMaker.Location;
 	//Enemy1 = none; // на всякий
 	`log("Бот: слышу врага!");

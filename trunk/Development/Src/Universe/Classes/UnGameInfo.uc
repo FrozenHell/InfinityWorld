@@ -1,12 +1,8 @@
 class UnGameInfo extends UTDeathmatch;
 
-exec function CreateBot() {
-	SpawnBot();
-}
-
 defaultproperties
 {
-	Acronym="UN"	
+	Acronym="UN"
 
 	MapPrefixes.Empty
 	MapPrefixes(0)="UN"
