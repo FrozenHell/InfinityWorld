@@ -75,7 +75,7 @@ exec function drawhouse(optional int seed = 0)
 	{
 		House = Spawn(class'City.myhouse', UnPawn(Owner),, vect(0, -100, 210), rot(0, 0, 0));
 		House.GetPlayerViewPoint = GetPlayerViewPoint;
-		House.gen2(UnPawn(Owner), 4, 4, 5, seed + 1);
+		House.gen2(UnPawn(Owner), 4, 4, 5, 0);
 		bHouseGenerated = true;
 	}
 }
@@ -397,7 +397,7 @@ exec function StartHunt()
 	GFxMovie.initialize(1);
 	foreach AllActors(class'Pawn', locPray)
 	{
-		if (locPray!=Pawn)
+		if (locPray!=Pawn && locPray.IsAliveAndWell())
 		{
 			Pray = locPray;
 			break;
@@ -418,16 +418,33 @@ exec function StopHunt()
 function BotPrayWin()
 {
 	Say("NPC Win");
-	bHunt = false;
-	GFxMovie.Close();
+	Pray.TornOff();
+	StopHunt();
+	NextRound();
 }
 
 // игрок-охотник убил жертву
 function PlayerHunterWin()
 {
 	Say("Player Win");
-	bHunt = false;
-	GFxMovie.Close();
+	StopHunt();
+	NextRound();
+}
+
+// следующий раунд
+function NextRound()
+{
+	local NavNode locNode;
+	
+	foreach AllActors(class'NavNode', locNode)
+	{
+		// спавним на одной из 20 первых нод
+		if (locNode.Location.z < 500 && Rand(20) < 3)
+		{
+			break;
+		}
+	}
+	SpawnPray(locNode.Location);
 }
 
 // обновляем информацию о цели
@@ -457,6 +474,28 @@ function UpdateRotation(float fDeltaTime)
 			PlayerHunterWin();
 	}
 	Super.UpdateRotation(fDeltaTime);
+}
+
+// создать новую жертву
+public function SpawnPray(vector posSpawn)
+{
+	local SequenceObject individualEvent;
+	local array<SequenceObject> eventList;
+	
+	// ищем все SeqEvent'ы нужного типа
+	WorldInfo.GetGameSequence().FindSeqObjectsByClass(class'SeqEvent_RemoveVectorEvent', true, eventList);
+	// Ищем наш SeqEvent среди собратьев его типа
+	foreach eventList(individualEvent)
+	{
+		// если это нужный SeqEvent
+		if (individualEvent.IsA('SeqEvent_RemoveVectorEvent') && SeqEvent_RemoveVectorEvent(individualEvent).EventName == 'SpawnPray')
+		{
+			// передаём в SeqEvent позицию, в которой будем создавать бота
+			SeqEvent_RemoveVectorEvent(individualEvent).Position = posSpawn;
+			// активируем SeqEvent
+			SequenceEvent(individualEvent).CheckActivate(self, Pawn);
+		}
+	}
 }
 
 defaultproperties
