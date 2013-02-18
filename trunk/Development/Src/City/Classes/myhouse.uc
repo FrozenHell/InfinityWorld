@@ -23,7 +23,7 @@ var int UtoR, Utor2, UtoR3;
 
 var float ASin, ACos;
 // дистанция ближнего вида и дистанция дальнего вида
-var int Dist1, DistFar;
+var int DistNear, DistFar;
 // текуший этаж
 var int CurrentFloor;
 var MyNavigationStruct MyData, MyData2;
@@ -68,14 +68,17 @@ delegate GetPlayerViewPoint(out vector out_Location, out Rotator out_rotation);
 auto state Created
 {
 	function CheckView() {
-		DrawHouse();
+		if (!IsNearPawn())
+			DrawHouse();
+		else
+			DrawHouse(true);
 	}
 
 Begin:
 	GetPlayerViewPoint(ViewLocation, ViewRotation);
 	distance = VSize(ViewLocation - Location);
-	CheckView();
 	Sleep(5 + distance * 0.0001);
+	CheckView();
 	Goto ('Begin');
 }
 // ----------------------------конец стейтов-----------------------------
@@ -173,10 +176,13 @@ private function cell DrawCell(int celll, const out vector posit, int wzPos, int
 	yachejka.South = drawHPart(Is2Bit(celll, 1), 1, posit);
 	yachejka.West = drawHPart(Is2Bit(celll, 0), 2, posit);
 
-	if (!st)
+	if (!st) // пол с потолком
 		yachejka.Pol = Spawn(class'City.testfloor', MyPawn,, posit, angle);
 	else
-		yachejka.Pol = Spawn(class'City.teststair', MyPawn,, posit, angle);
+		if ((wzPos == 1) && st) // пол первого этажа лестницы
+			yachejka.Roof=Spawn(class'City.teststairfloor', MyPawn,, posit, angle);
+		else // лестница
+			yachejka.Pol = Spawn(class'City.teststair', MyPawn,, posit, angle);
 
 	if (wxPos == 1)
 		yachejka.Lex = drawHOutPart(IsBit(celll, 7)*2+IsBit(celll, 6), 3, posit);
@@ -187,10 +193,7 @@ private function cell DrawCell(int celll, const out vector posit, int wzPos, int
 		yachejka.Wex = drawHOutPart(IsBit(celll, 5) * 2 + IsBit(celll, 4), 0, posit);
 	else if
 		(wyPos == 2) yachejka.Wex = drawHOutPart(IsBit(celll, 1) * 2 + IsBit(celll, 0), 2, posit);
-
-	// пол первого этажа лестницы
-	if ((wzPos == 1) && st)
-		yachejka.Roof=Spawn(class'City.teststairfloor', MyPawn,, posit, angle);
+	
 
 	if (wzPos == 2) // если последний этаж
 	{
@@ -429,7 +432,7 @@ function bool SetVisibility(vector nav)
 		}
 
 		// если дом очень близко
-		if (Vsize(nav) < Dist1)
+		if (Vsize(nav) < DistNear)
 		{
 			// определяем текущий этаж
 			floor = (nav.z + 30) / HeiW;
@@ -480,6 +483,41 @@ function GetVisibleMass()
 	}
 }
 
+function Pawn FindNearlyPawn()
+{
+	local Pawn locPawn, nearlyPawn;
+	local float Dist;
+	Dist = 100000;
+	foreach AllActors(class'Pawn', locPawn)
+	{
+		if (Vsize(FindNearlyPawn().Location - Location) < Dist)
+		{
+			nearlyPawn = locPawn;
+			Dist = Vsize(FindNearlyPawn().Location - Location);
+		}
+	}
+	return nearlyPawn;
+}
+
+function bool IsnearPawn()
+{
+	local Pawn locPawn, nearlyPawn;
+	local float Dist;
+	Dist = 100000;
+	foreach AllActors(class'Pawn', locPawn)
+	{
+		if (Vsize(locPawn.Location - Location) < Dist)
+		{
+			nearlyPawn = locPawn;
+			Dist = Vsize(locPawn.Location - Location);
+		}
+	}
+	if (nearlyPawn != None)
+		return Vsize(nearlyPawn.Location - Location) < DistNear;
+	else
+		return false;
+}
+
 /*
  * Так как навигационные маршруты тесно связаны с ячейками здания, то стоило бы
  * связать генерацию навигационных узлов с генерацией каждой ячейки. Но тогда
@@ -520,10 +558,6 @@ function GenNavNet()
 					Cells[addr].NodeNorth = Spawn(class'Base.NavNode', MyPawn,, LocShift(pos,, LenW * 0.4), rot(0, 0, 0));
 					NavList.AddItem(Cells[addr].NodeNorth);
 
-					// создаём верхний узел и заносим его в список
-					Cells[addr].NodeTop = Spawn(class'Base.NavNode', MyPawn,, LocShift(pos, -WidW * 0.35, -LenW * 0.35, HeiW * 0.55), rot(0, 0, 0));
-					NavList.AddItem(Cells[addr].NodeTop);
-
 					// связываем северный и нижний узлы
 					BindNodes(Cells[addr].NodeNorth, Cells[addr].NodeBottom);
 
@@ -543,12 +577,43 @@ function GenNavNet()
 
 					// связываем первый промежуточный и второй промежуточный узлы
 					BindNodes(localNode1, localNode2);
+					
+					// если это не последний этаж
+					if (k < Height - 1)
+					{
+						// создаём верхний узел и заносим его в список
+						Cells[addr].NodeTop = Spawn(class'Base.NavNode', MyPawn,, LocShift(pos, -WidW * 0.35, -LenW * 0.35, HeiW * 0.55), rot(0, 0, 0));
+						NavList.AddItem(Cells[addr].NodeTop);
 
-					// связываем второй промежуточный и верхний узлы
-					BindNodes(localNode2, Cells[addr].NodeTop);
-
+						// связываем второй промежуточный и верхний узлы
+						BindNodes(localNode2, Cells[addr].NodeTop);
+					}
+					else // если этаж последний
+					{
+						// создаём третий промежуточный узел (используя место в памяти первого) и заносим его в список
+						localNode1 = Spawn(class'Base.NavNode', MyPawn,, LocShift(pos, -WidW * 0.35, -LenW * 0.35, HeiW * 0.55), rot(0, 0, 0));
+						NavList.AddItem(localNode1);
+						
+						// связываем второй промежуточный и третий промежуточный узлы
+						BindNodes(localNode2, localNode1);
+						
+						// создаём четвёртый промежуточный узел (используя место в памяти второго) и заносим его в список
+						localNode2 = Spawn(class'Base.NavNode', MyPawn,, LocShift(pos, -WidW * 0.35, LenW * 0.35, HeiW), rot(0, 0, 0));
+						NavList.AddItem(localNode1);
+						
+						// связываем третий промежуточный и четвёртый промежуточный узлы
+						BindNodes(localNode1, localNode2);
+						
+						// создаём верхний узел и заносим его в список (высота узла завышена чтобы он казался самым высоким)
+						Cells[addr].NodeTop = Spawn(class'Base.NavNode', MyPawn,, LocShift(pos, -WidW * 0.35, LenW, HeiW+10), rot(0, 0, 0));
+						NavList.AddItem(Cells[addr].NodeTop);
+						
+						// связываем четвёртый промежуточный и верхний узлы
+						BindNodes(localNode2, Cells[addr].NodeTop);
+					}
+					
 					// если этаж не первый
-					if (k > 0) // тогда связываем по вертикали
+					if (k > 0) // тогда связываем по вертикали (этот с нижним)
 						BindNodes(Cells[addr].NodeBottom, Cells[addr - Length * Width].NodeTop);
 				}
 				else // если не лестница
@@ -633,6 +698,6 @@ defaultproperties
 	LenW = 600
 	WidW = 600
 	HeiW = 250
-	Dist1 = 5000
+	DistNear = 5000
 	DistFar = 20000
 }

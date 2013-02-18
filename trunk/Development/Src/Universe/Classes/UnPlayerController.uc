@@ -75,7 +75,7 @@ exec function drawhouse(optional int seed = 0)
 	{
 		House = Spawn(class'City.myhouse', UnPawn(Owner),, vect(0, -100, 210), rot(0, 0, 0));
 		House.GetPlayerViewPoint = GetPlayerViewPoint;
-		House.gen2(UnPawn(Owner), 4, 4, 2, seed + 1);
+		House.gen2(UnPawn(Owner), 4, 4, 5, seed + 1);
 		bHouseGenerated = true;
 	}
 }
@@ -181,7 +181,15 @@ exec function gen_ps()
 	PS1.generate(UnPawn(Owner), 1);
 }
 
-// обработчики нажатий на кнопки на тестовом уровне
+exec function GenCity()
+{
+	local City miniCity;
+	miniCity = Spawn(class'City.City', UnPawn(Owner),, vec(0, 0, 0), UnrRot(0, 0, -40));
+	miniCity.GetPlayerViewPoint = GetPlayerViewPoint;
+	miniCity.Gen(UnPawn(Owner), 0);
+}
+
+// --- обработчики нажатий на кнопки на тестовом уровне
 exec function BtnCreate()
 {
 	if (!bTestHouseCreated)
@@ -357,6 +365,8 @@ exec function BtnSeedSub()
 	}
 	Say("Seed"@TestHouseSeed);
 }
+// --- конец обработчиков кнопок на тестовом уровне
+
 
 // нажали клавишу "Использовать"
 exec function use_actor()
@@ -379,6 +389,7 @@ exec function use_actor()
 	}
 }
 
+// начинаем охоту
 exec function StartHunt()
 {
 	local Pawn locPray;
@@ -396,6 +407,30 @@ exec function StartHunt()
 	bHunt = true;
 }
 
+// остонавливаем охоту
+exec function StopHunt()
+{
+	GFxMovie.Close();
+	bHunt = false;
+}
+
+// бот-жертва добежал
+function BotPrayWin()
+{
+	Say("NPC Win");
+	bHunt = false;
+	GFxMovie.Close();
+}
+
+// игрок-охотник убил жертву
+function PlayerHunterWin()
+{
+	Say("Player Win");
+	bHunt = false;
+	GFxMovie.Close();
+}
+
+// обновляем информацию о цели
 function UpdateRotation(float fDeltaTime)
 {
 	local vector viewLocation;
@@ -404,16 +439,22 @@ function UpdateRotation(float fDeltaTime)
 
 	if (bHunt)
 	{
-		// ищем координаты игрока
-		GetPlayerViewPoint(viewLocation, viewRotation);
+		// если жертва существует и жива
+		if (Pray != None && Pray.IsAliveAndWell())
+		{
+			// ищем координаты игрока
+			GetPlayerViewPoint(viewLocation, viewRotation);
 
-		// ищем разницу в высоте
-		zShift = Pray.Location.z - viewLocation.z;
-		if (abs(zShift) < 120.0)
-			zShift = 0;
+			// ищем разницу в высоте
+			zShift = Pray.Location.z - viewLocation.z;
+			if (abs(zShift) < 120.0)
+				zShift = 0;
 
-		// поворачиваем стрелку в сторону жертвы
-		GFxMovie.Redraw((rotator(viewLocation - Pray.Location).Yaw - viewRotation.Yaw) / RadToUnrRot, zShift);
+			// поворачиваем стрелку в сторону жертвы
+			GFxMovie.Redraw((rotator(viewLocation - Pray.Location).Yaw - viewRotation.Yaw) / RadToUnrRot, zShift);
+		}
+		else // если жертва мертва или её нет, считаем что выиграл игрок
+			PlayerHunterWin();
 	}
 	Super.UpdateRotation(fDeltaTime);
 }
