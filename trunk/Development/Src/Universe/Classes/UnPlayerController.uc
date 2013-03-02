@@ -2,13 +2,17 @@
  *	UnPlayerController
  *
  *	Creation date: 03.01.2012 18:08
- *	Copyright 2012, FrozenHell Skyline
+ *	Copyright 2013, FHS
  */
 class UnPlayerController extends UTPlayerController;
 
 var MyGalaxy Galaxy;
 var MyHouse House;
 var bool bGalaxyGenerated, bHouseGenerated;
+
+// HUD
+var GFxMovie_PlayerHUD GFxHUD;
+var Actor HUDUsableActor;
 
 // переменные для работы с тестовым уровнем TestHouse
 var int TestHouseType;
@@ -19,7 +23,7 @@ var int TestHouseSeed;
 var float TestHouseAngle;
 
 // для режима охотник-жертва
-var GFxMovie_HunterHUD GFxMovie;
+var GFxMovie_HunterHUD GFxHunterHUD;
 var Pawn Pray;
 var bool bHunt;
 
@@ -393,8 +397,8 @@ exec function use_actor()
 exec function StartHunt()
 {
 	local Pawn locPray;
-	GFxMovie = new Class'Base.GFxMovie_HunterHUD';
-	GFxMovie.initialize(1);
+	GFxHunterHUD = new Class'Base.GFxMovie_HunterHUD';
+	GFxHunterHUD.initialize(1);
 	foreach AllActors(class'Pawn', locPray)
 	{
 		if (locPray!=Pawn && locPray.IsAliveAndWell())
@@ -410,7 +414,7 @@ exec function StartHunt()
 // остонавливаем охоту
 exec function StopHunt()
 {
-	GFxMovie.Close();
+	GFxHunterHUD.Close();
 	bHunt = false;
 }
 
@@ -468,11 +472,13 @@ function UpdateRotation(float fDeltaTime)
 				zShift = 0;
 
 			// поворачиваем стрелку в сторону жертвы
-			GFxMovie.Redraw((rotator(viewLocation - Pray.Location).Yaw - viewRotation.Yaw) / RadToUnrRot, zShift);
+			GFxHunterHUD.Redraw((rotator(viewLocation - Pray.Location).Yaw - viewRotation.Yaw) / RadToUnrRot, zShift);
 		}
 		else // если жертва мертва или её нет, считаем что выиграл игрок
 			PlayerHunterWin();
 	}
+	
+	CheckTouchscreens();
 	Super.UpdateRotation(fDeltaTime);
 }
 
@@ -498,6 +504,53 @@ public function SpawnPray(vector posSpawn)
 	}
 }
 
+// проверяем на наличие вблизи объектов, которые можно использовать
+function CheckTouchscreens()
+{
+	local Actor hitActor;
+	local vector hitNormal, hitLocation;
+	local vector viewLocation;
+	local rotator viewRotation;
+	// расстояние на котором можем использовать объекты
+	local float maxRange;
+	maxRange = 150;
+	GetPlayerViewPoint(viewLocation, viewRotation);
+	HitActor = Trace(hitLocation, hitNormal, viewLocation + maxRange * vector(viewRotation), viewLocation, true);
+
+	// если мы навели прицел на актёра, который можно использовать
+	if (Useable(HitActor) != None)
+	{
+		// если объект - это сенсорный экран, тогда двигаем курсор по нему
+		if (TouchScreen(HitActor) != None)
+		{
+			TouchScreen(HitActor).SetCursorPosition(hitLocation);	
+		}
+		
+		// выводим "Нажмите F чтобы ..."
+		if (HUDUsableActor != HitActor)
+		{
+			HUDUsableActor = HitActor;
+			GFxHUD.AddIcon(Useable(HitActor).GetActionName());
+		}
+	}
+	else
+	{
+		// если перед нами ничего нет, то убираем все подсказки с экрана
+		if (HUDUsableActor != None)
+		{
+			HUDUsableActor = None;
+			GFxHUD.RemoveIcon();
+		}
+	}
+}
+
+simulated event PostBeginPlay()
+{
+	Super.PostBeginPlay();
+	GFxHUD = new Class'Universe.GFxMovie_PlayerHUD';
+	GFxHUD.initialize();
+}
+
 defaultproperties
 {
 	Name="Default__UnPlayerController"
@@ -509,4 +562,5 @@ defaultproperties
 	TestHouseSeed = 0
 	TestHouseAngle = 0.0
 	bHunt = false
+	HUDTypeUse = 0;
 }

@@ -2,7 +2,7 @@
  *	UsableActor
  *
  *	Creation date: 01.04.2012 22:10
- *	Copyright 2012, FrozenHell Skyline
+ *	Copyright 2013, FHS
  *	
  *	Актёр для тестирования определённых функций, связанных с использованием объектов
  *	Не используйте его в конечном проекте
@@ -16,6 +16,15 @@ var() const editconst StaticMeshComponent	StaticMeshComponent;
 
 // UsableActor_ID для Event кисмета "Use UsabeActor"
 var() int Kismet_ID;
+
+// поле, отображаемое на HUD ("Нажмите F чтобы"@ActionName)
+var() String ActionName;
+
+// забрать значение ActionName
+public function String GetActionName()
+{
+	return ActionName;
+}
 
 public function Use(Pawn uInstigator)
 {
@@ -63,4 +72,5 @@ defaultproperties
 	bGameRelevant=true
 	bRouteBeginPlayEvenIfStatic=false
 	bCollideWhenPlacing=false
+	ActionName="использовать"
 }

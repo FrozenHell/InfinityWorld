@@ -2,13 +2,19 @@
  *	SpeakingPawn
  *
  *	Creation date: 03.04.2012 18:08
- *	Copyright 2012, FrozenHell Skyline
- *
- *	Паун для тестирования определённых функций, связанных с диалогами
- *	Не используйте его в конечном проекте
+ *	Copyright 2013, FrozenHell Skyline
  */
 class SpeakingPawn extends UTPawn // надо будет наследовать от другого класса
 	implements(Useable);
+
+// поле, отображаемое на HUD ("Нажмите F чтобы"@ActionName)
+var() String ActionName;
+
+// забрать значение ActionName
+public function String GetActionName()
+{
+	return ActionName;
+}
 
 // заговорить с пауном
 public function Use(Pawn uInstigator)
@@ -18,5 +24,5 @@ public function Use(Pawn uInstigator)
 
 defaultproperties
 {
-
+	ActionName="говорить"
 }
