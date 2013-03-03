@@ -9,3 +9,5 @@ interface Useable;
 public function String GetActionName();
 
 public function Use(Pawn uInstigator);
+
+public function bool GetUseable();

@@ -14,6 +14,9 @@ var bool bGalaxyGenerated, bHouseGenerated;
 var GFxMovie_PlayerHUD GFxHUD;
 var Actor HUDUsableActor;
 
+// максимальное расстояние на котором можно использовать объекты
+var float MaxUseRange;
+
 // переменные для работы с тестовым уровнем TestHouse
 var int TestHouseType;
 var int TestHouseHeight;
@@ -21,7 +24,6 @@ var bool bTestHouseCreated;
 var Actor TestHouse;
 var int TestHouseSeed;
 var float TestHouseAngle;
-
 // для режима охотник-жертва
 var GFxMovie_HunterHUD GFxHunterHUD;
 var Pawn Pray;
@@ -379,17 +381,17 @@ exec function use_actor()
 	local vector hitNormal, hitLocation;
 	local vector viewLocation;
 	local rotator viewRotation;
-	// расстояние на котором можем использовать объекты
-	local float maxRange;
-	maxRange = 100;
+
 	GetPlayerViewPoint(viewLocation, viewRotation);
-	HitActor = Trace(hitLocation, hitNormal, viewLocation + maxRange * vector(viewRotation), viewLocation, true);
+	HitActor = Trace(hitLocation, hitNormal, viewLocation + MaxUseRange * vector(viewRotation), viewLocation, true);
 
 	// если мы нажали на актёра, который можно использовать
-	if (Useable(HitActor) != None)
+	if (Useable(HitActor) != None && Useable(HitActor).GetUseable())
 	{
 		// использовать
 		Useable(HitActor).Use(Pawn);
+		
+		GFxHUD.AddIcon(Useable(HitActor).GetActionName());
 	}
 }
 
@@ -511,14 +513,12 @@ function CheckTouchscreens()
 	local vector hitNormal, hitLocation;
 	local vector viewLocation;
 	local rotator viewRotation;
-	// расстояние на котором можем использовать объекты
-	local float maxRange;
-	maxRange = 150;
+
 	GetPlayerViewPoint(viewLocation, viewRotation);
-	HitActor = Trace(hitLocation, hitNormal, viewLocation + maxRange * vector(viewRotation), viewLocation, true);
+	HitActor = Trace(hitLocation, hitNormal, viewLocation + MaxUseRange * vector(viewRotation), viewLocation, true);
 
 	// если мы навели прицел на актёра, который можно использовать
-	if (Useable(HitActor) != None)
+	if (Useable(HitActor) != None && Useable(HitActor).GetUseable())
 	{
 		// если объект - это сенсорный экран, тогда двигаем курсор по нему
 		if (TouchScreen(HitActor) != None)
@@ -529,6 +529,9 @@ function CheckTouchscreens()
 		// выводим "Нажмите F чтобы ..."
 		if (HUDUsableActor != HitActor)
 		{
+			if (TouchScreen(HUDUsableActor) != None)
+				TouchScreen(HUDUsableActor).UnFocus();
+
 			HUDUsableActor = HitActor;
 			GFxHUD.AddIcon(Useable(HitActor).GetActionName());
 		}
@@ -538,6 +541,9 @@ function CheckTouchscreens()
 		// если перед нами ничего нет, то убираем все подсказки с экрана
 		if (HUDUsableActor != None)
 		{
+			if (TouchScreen(HUDUsableActor) != None)
+				TouchScreen(HUDUsableActor).UnFocus();
+
 			HUDUsableActor = None;
 			GFxHUD.RemoveIcon();
 		}
@@ -562,5 +568,6 @@ defaultproperties
 	TestHouseSeed = 0
 	TestHouseAngle = 0.0
 	bHunt = false
-	HUDTypeUse = 0;
+	MaxUseRange = 150
+	HUDUsableActor = None;
 }

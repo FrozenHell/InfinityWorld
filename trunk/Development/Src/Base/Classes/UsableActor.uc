@@ -12,7 +12,10 @@ class UsableActor extends Actor
 	implements(Useable);
 
 // Игровая модель для объекта
-var() const editconst StaticMeshComponent	StaticMeshComponent;
+var() const editconst StaticMeshComponent StaticMeshComponent;
+
+// Доступен ли объект для использования
+var bool bUseable;
 
 // UsableActor_ID для Event кисмета "Use UsabeActor"
 var() int Kismet_ID;
@@ -52,6 +55,11 @@ public function Use(Pawn uInstigator)
 	}
 }
 
+public function bool GetUseable()
+{
+	return bUseable;
+}
+
 defaultproperties
 {
 	Begin Object Class=StaticMeshComponent Name=StaticMeshComponent0
@@ -73,4 +81,5 @@ defaultproperties
 	bRouteBeginPlayEvenIfStatic=false
 	bCollideWhenPlacing=false
 	ActionName="использовать"
+	bUseable = true
 }

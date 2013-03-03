@@ -16,7 +16,7 @@ function bool Start(optional bool startPaused = false)
 	return true;
 }
 
-function initialize()
+function Initialize()
 {
 	Start(true);
 }
@@ -36,6 +36,19 @@ function MoveCursor(float locX, float locY)
 	// вызываем функцию из AS
 	Invoke("_root.MoveCursor", args);
 }
+
+// нажали на экран
+function Tap()
+{
+	ActionScriptVoid("_root.Tap");
+}
+
+// экран больше не в фокусе
+function UnFocus()
+{
+	ActionScriptVoid("_root.UnFocus");
+}
+
 
 defaultproperties
 {

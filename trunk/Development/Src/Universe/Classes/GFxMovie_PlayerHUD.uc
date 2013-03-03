@@ -32,10 +32,10 @@ function AddIcon(String ActionName)
 	
 	Invoke("_root.AddIcon", args);
 }
+
 function RemoveIcon()
 {
-	local array<ASValue> args;
-	Invoke("_root.RemoveIcon", args);
+	ActionScriptVoid("_root.RemoveIcon");
 }
 
 defaultproperties

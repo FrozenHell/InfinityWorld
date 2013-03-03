@@ -10,6 +10,9 @@ class SpeakingPawn extends UTPawn // надо будет наследовать от другого класса
 // поле, отображаемое на HUD ("Нажмите F чтобы"@ActionName)
 var() String ActionName;
 
+// Доступен ли объект для использования
+var bool bUseable;
+
 // забрать значение ActionName
 public function String GetActionName()
 {
@@ -22,7 +25,13 @@ public function Use(Pawn uInstigator)
 	`log(Name@"был потревожен");
 }
 
+public function bool GetUseable()
+{
+	return bUseable;
+}
+
 defaultproperties
 {
 	ActionName="говорить"
+	bUseable = true
 }

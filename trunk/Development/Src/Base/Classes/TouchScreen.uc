@@ -28,6 +28,19 @@ function SetCursorPosition(vector globPosition)
 	// устонавливаем курсор
 	GFxMovie.MoveCursor((100+localPosition.x) * 2.5, (100-localPosition.z) * 2.5);
 }
+
+// больше не используем ролик
+function UnFocus()
+{
+	GFxMovie.UnFocus();
+}
+
+// переопределяем Use
+public function Use(Pawn uInstigator)
+{
+	GFxMovie.Tap();
+}
+
 defaultproperties
 {
 	Begin Object Name=StaticMeshComponent0
@@ -36,4 +49,6 @@ defaultproperties
 		bUsePrecomputedShadows=TRUE
 		StaticMesh=StaticMesh'TouchScreen.TouchMesh'
 	End Object
+	
+	ActionName = "коснуться"
 }
