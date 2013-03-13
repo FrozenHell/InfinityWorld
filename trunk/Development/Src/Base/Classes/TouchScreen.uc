@@ -39,6 +39,9 @@ function UnFocus()
 public function Use(Pawn uInstigator)
 {
 	GFxMovie.Tap();
+	
+	// если нам понадобтся обработать нажатие через кисмет
+	Super.Use(uInstigator);
 }
 
 defaultproperties
