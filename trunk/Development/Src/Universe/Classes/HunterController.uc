@@ -33,7 +33,7 @@ function StopPlayerHunt()
 		playerContr.BotPrayWin();
 	}
 }
-
+/*
 auto state PrayWalk
 {
 Begin:
@@ -46,7 +46,7 @@ state Wait
 BEGIN:
 	// дошли до финиша, говорим об этом
 	StopPlayerHunt();
-}
+}*/
 
 defaultproperties
 {

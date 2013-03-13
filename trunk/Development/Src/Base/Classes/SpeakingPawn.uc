@@ -13,6 +13,27 @@ var() String ActionName;
 // Доступен ли объект для использования
 var bool bUseable;
 
+// звуки
+var SoundCue ExpectingSample;
+var SoundCue WarningSample;
+var SoundCue AttackingSample;
+
+// нативные функции
+function PlayExpectingSample()
+{
+    PlaySound (ExpectingSample);
+}
+
+function PlayWarningSound()
+{
+    PlaySound (WarningSample);
+}
+
+function PlayAttackingSound()
+{
+    PlaySound (AttackingSample);
+}
+
 // забрать значение ActionName
 public function String GetActionName()
 {
@@ -32,6 +53,16 @@ public function bool GetUseable()
 
 defaultproperties
 {
+	SightRadius = 50000
+    PeripheralVision = 0.00
+    
+    ExpectingSample = SoundCue'ourgame.Expecting_Cue'
+    WarningSample = SoundCue'A_Gameplay.CTF.Cue.A_Gameplay_CTF_FlagAlarm_Cue'
+    AttackingSample = SoundCue'ourgame.Attacking_Cue'  
+	
 	ActionName="говорить"
 	bUseable = true
+
+	Mesh=WPawnSkeletalMeshComponent
+	Components.Add(WPawnSkeletalMeshComponent)
 }
