@@ -53,17 +53,18 @@ exec function drawgalaxy(optional int numStars = 1000)
 {
 	if (!bGalaxyGenerated)
 	{
-		galaxy = Spawn(class'City.mygalaxy', UnPawn(Owner),, vect(500, 0, 1000), rot(0, 0, 0));
+		galaxy = Spawn(class'City.mygalaxy', UnPawn(Owner),, vect(240, 100000, 1000), rot(0, 0, 0));
+		galaxy.RotateG(0, 10, -0.5);
 		galaxy.GetPlayerViewPoint = GetPlayerViewPoint;
 		bGalaxyGenerated = true;
 		galaxy.gen(UnPawn(Owner), numStars);
-		say("Generated"@numStars@"stars");
+		//say("Generated"@numStars@"stars");
 	}
 }
 
 exec function rotateGalax(float Pitch, float Yaw, float Roll)
 {
-	//galaxy.RotateGf(Pitch, Yaw, Roll);
+	galaxy.RotateG(Pitch, Yaw, Roll);
 }
 
 exec function cleargalaxy()
@@ -81,7 +82,7 @@ exec function drawhouse(optional int seed = 0)
 	{
 		House = Spawn(class'City.myhouse', UnPawn(Owner),, vect(0, -100, 210), rot(0, 0, 0));
 		House.GetPlayerViewPoint = GetPlayerViewPoint;
-		House.gen2(UnPawn(Owner), 4, 4, 5, 0);
+		House.gen2(UnPawn(Owner), 0, 4, 4, 5, 0);
 		bHouseGenerated = true;
 	}
 }
@@ -96,7 +97,7 @@ exec function genmorehouses()
 		{
 			how = Spawn(class'City.myhouse', UnPawn(Owner),, vec(i * 5000, j * 5000, 210), rot(0, 0, 0));
 			how.GetPlayerViewPoint = GetPlayerViewPoint;
-			how.gen2(UnPawn(Owner), 5, 5, 10, i + j);
+			how.gen2(UnPawn(Owner), 0, 5, 5, 10, i + j);
 		}
 	}
 }
@@ -132,7 +133,7 @@ exec function getnearnavnode()
 	star.Change(); // подсветить белым
 
 	// показать связи
-	for (i = 0; i < node.LinksSize; i++)
+	for (i = 0; i < node.Links.Length; i++)
 	{
 		minNode = node.Links[i];
 		Spawn(class'City.ministar', UnPawn(Owner),, node.Location - (node.Location - minNode.Location)/3, rot(0, 0, 0));
@@ -140,7 +141,7 @@ exec function getnearnavnode()
 		star = Spawn(class'City.ministar', UnPawn(Owner),, minNode.Location, UnrRot(0, 0, 0));
 		star.Change(); // подсветить белым
 
-		for (j = 0; j < minNode.LinksSize; j++)
+		for (j = 0; j < minNode.Links.Length; j++)
 		{
 			minMinNode = minNode.Links[j];
 			Spawn(class'City.ministar', UnPawn(Owner),, minNode.Location - (minNode.Location - minMinNode.Location)/3, rot(0, 0, 0));
@@ -148,7 +149,7 @@ exec function getnearnavnode()
 			star = Spawn(class'City.ministar', UnPawn(Owner),, minMinNode.Location, UnrRot(0, 0, 0));
 			star.Change(); // подсветить белым
 
-			for (k = 0; k < minMinNode.LinksSize; k++)
+			for (k = 0; k < minMinNode.Links.Length; k++)
 			{
 				Spawn(class'City.ministar', UnPawn(Owner),, minMinNode.Location - (minMinNode.Location - minMinNode.Links[k].Location)/3, rot(0, 0, 0));
 			}
@@ -205,7 +206,7 @@ exec function BtnCreate()
 			case 0:
 				TestHouse = Spawn(class'City.MyHouse', UnPawn(Owner),, vect(0, -10000, -40), UnrRot(0, TestHouseAngle, 0));
 				MyHouse(TestHouse).GetPlayerViewPoint = GetPlayerViewPoint;
-				MyHouse(TestHouse).gen2(UnPawn(Owner), 10, 10, TestHouseHeight, TestHouseSeed);
+				MyHouse(TestHouse).gen2(UnPawn(Owner), 0, 10, 10, TestHouseHeight, TestHouseSeed);
 				break;
 			case 1:
 			case 2:

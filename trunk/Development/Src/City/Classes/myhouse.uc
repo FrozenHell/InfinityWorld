@@ -38,6 +38,8 @@ var int Distance;
 var rotator Angle;
 // вспомогательная переменная для определения точных координат ячеек
 var vector HouseCenter;
+// тип здания (0 - обычное, 1 - часть трёхлучевого)
+var int BuildingType;
 
 /*
  * Visiblity
@@ -58,7 +60,7 @@ var array<Cell> Cells;
 // массив навигационых узлов в виде списка
 var array<NavNode> NavList;
 
-dllimport final function GetNavData(out MyNavigationStruct NavData, int len, int wid, int hei, int seed);
+dllimport final function GetNavData(out MyNavigationStruct NavData, int type, int len, int wid, int hei, int seed);
 dllimport final function GetNavData2(out MyNavigationStruct NavData,out MyNavigationStruct NavData2, int len, int wid, int hei, int xpos, int ypos, int zpos);
 
 // делегат для одноимённой функции из плеерконтроллера
@@ -244,12 +246,13 @@ private function cell DrawCell(int celll, const out vector posit, int wzPos, int
 }
 
 // инициализация здания и выделение памяти (координаты положения актёра - угол здания)
-function Gen(Pawn locPawn, optional int len = 10, optional int wid = 10, optional int hei = 10, optional int seed = 0)
+function Gen(Pawn locPawn, int locType, optional int len = 10, optional int wid = 10, optional int hei = 10, optional int seed = 0)
 {
 	Length = len;
 	Width = wid;
 	Height = hei;
-	GetNavData(MyData, Length, Width, Height, seed);
+	BuildingType = locType;
+	GetNavData(MyData, BuildingType, Length, Width, Height, seed);
 	MyPawn = locPawn;
 	HouseCenter.X = 0; // совсем не центр, скорее реальная точка приложения дома
 	HouseCenter.Y = 0;
@@ -262,12 +265,13 @@ function Gen(Pawn locPawn, optional int len = 10, optional int wid = 10, optiona
 }
 
 // инициализация здания и выделение памяти (координаты положения актёра - центр здания)
-function gen2(Pawn locPawn, optional int len = 10, optional int wid = 10, optional int hei = 10, optional int seed = 0)
+function gen2(Pawn locPawn, int locType, optional int len = 10, optional int wid = 10, optional int hei = 10, optional int seed = 0)
 {
 	Length = len;
 	Width = wid;
 	Height = hei;
-	GetNavData(MyData, Length, Width, Height, seed);
+	BuildingType = locType;
+	GetNavData(MyData, BuildingType, Length, Width, Height, seed);
 	MyPawn = locPawn;
 	HouseCenter.x = ((Length - 1) * LenW / 2); // совсем не центр, скорее реальная точка приложения дома
 	HouseCenter.y = ((Width - 1) * WidW / 2);
@@ -345,10 +349,10 @@ function initialize()
 		Cells[i] = celll;
 }
 
-private function actor drawHPart(int type, int ang, const out vector posit) // передавать вектор "по ссылке", а не "по значению", const говорит о том, что вектор не будет меняться в этой функции
+private function actor drawHPart(int partType, int ang, const out vector posit) // передавать вектор "по ссылке", а не "по значению", const говорит о том, что вектор не будет меняться в этой функции
 {
 	local actor mypExem;
-	switch (type)
+	switch (partType)
 	{
 		case 0:
 			mypExem = Spawn(class'City.testwindow', MyPawn,, posit, qwatrot(ang));
@@ -368,10 +372,10 @@ private function actor drawHPart(int type, int ang, const out vector posit) // п
 	return mypExem;
 }
 
-private function actor drawHOutPart(int type, int ang, const out vector posit) // передавать вектор "по ссылке", а не "по значению", const говорит о том, что вектор не будет меняться в этой функции
+private function actor drawHOutPart(int partType, int ang, const out vector posit) // передавать вектор "по ссылке", а не "по значению", const говорит о том, что вектор не будет меняться в этой функции
 {
 	local actor mypExem;
-	switch (type)
+	switch (partType)
 	{
 		case 0:
 			mypExem = Spawn(class'City.testwindowex', MyPawn,, posit, qwatrot(ang));
@@ -700,4 +704,5 @@ defaultproperties
 	HeiW = 250
 	DistNear = 5000
 	DistFar = 20000
+	BuildingType = 0;
 }
