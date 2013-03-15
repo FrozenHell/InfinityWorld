@@ -14,6 +14,10 @@ var bool bGalaxyGenerated, bHouseGenerated;
 var GFxMovie_PlayerHUD GFxHUD;
 var Actor HUDUsableActor;
 
+// Pause menu
+var GFxMovie_PauseMenu GFxPauseMenu;
+var bool bGamePaused;
+
 // максимальное расстояние на котором можно использовать объекты
 var float MaxUseRange;
 
@@ -47,6 +51,38 @@ exec function vector Vec(int x, int y, int z)
 	ve.Y = y;
 	ve.Z = z;
 	return ve;
+}
+
+exec function ShowPauseMenu()
+{
+	if (!bGamePaused)
+	{
+		GFxPauseMenu.Start(false);
+		bGamePaused = true;
+	}
+	else
+	{
+		GFxPauseMenu.Close(false);
+		bGamePaused = false;
+	}
+}
+
+function PauseMenuEvent(int intEvent)
+{
+	switch (intEvent)
+	{
+		case 0:
+			ShowPauseMenu();
+			break;
+		case 1:
+			say("start menu");
+			break;
+		case 2:
+			say("exit game");
+			break;
+		default:
+			break;
+	}
 }
 
 exec function drawgalaxy(optional int numStars = 1000)
@@ -555,7 +591,11 @@ simulated event PostBeginPlay()
 {
 	Super.PostBeginPlay();
 	GFxHUD = new Class'Universe.GFxMovie_PlayerHUD';
-	GFxHUD.initialize();
+	GFxHUD.Initialize();
+	
+	GFxPauseMenu = new Class'Base.GFxMovie_PauseMenu';
+	GFxPauseMenu.Initialize(self);
+	GFxPauseMenu.PauseMenuEvent = PauseMenuEvent;
 }
 
 defaultproperties
@@ -570,5 +610,6 @@ defaultproperties
 	TestHouseAngle = 0.0
 	bHunt = false
 	MaxUseRange = 150
-	HUDUsableActor = None;
+	HUDUsableActor = None
+	bGamePaused = false
 }
