@@ -13,6 +13,8 @@ var() String ActionName;
 // Доступен ли объект для использования
 var bool bUseable;
 
+var Dialog Dialog;
+
 // звуки
 var SoundCue ExpectingSample;
 var SoundCue WarningSample;
@@ -34,6 +36,12 @@ function PlayAttackingSound()
     PlaySound (AttackingSample);
 }
 
+// функция вызывается из класса Dialog
+function DialogClosed()
+{
+	bUseable = true;
+}
+
 // забрать значение ActionName
 public function String GetActionName()
 {
@@ -43,7 +51,12 @@ public function String GetActionName()
 // заговорить с пауном
 public function Use(Pawn uInstigator)
 {
-	`log(Name@"был потревожен");
+	if (Dialog == None)
+		Dialog = new class'Base.Dialog';
+	Dialog.StartNewTalk(1, 1);
+	Dialog.DialogClosed = DialogClosed;
+	bUseable = false;
+	//`log(Name@"был потревожен");
 }
 
 public function bool GetUseable()
@@ -56,9 +69,9 @@ defaultproperties
 	SightRadius = 50000
     PeripheralVision = 0.00
     
-    ExpectingSample = SoundCue'ourgame.Expecting_Cue'
-    WarningSample = SoundCue'A_Gameplay.CTF.Cue.A_Gameplay_CTF_FlagAlarm_Cue'
-    AttackingSample = SoundCue'ourgame.Attacking_Cue'  
+	//ExpectingSample = SoundCue'ourgame.Expecting_Cue'
+	//WarningSample = SoundCue'A_Gameplay.CTF.Cue.A_Gameplay_CTF_FlagAlarm_Cue'
+	//AttackingSample = SoundCue'ourgame.Attacking_Cue'  
 	
 	ActionName="говорить"
 	bUseable = true

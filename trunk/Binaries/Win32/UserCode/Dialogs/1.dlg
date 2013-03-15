@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="windows-1251"?>
+<dialogs>
+  <dialog1 message="Привет, странни{iif(sex='male','к ','ца') + ' ' + Name}!">
+    <answer1 message="Привет!!!" parent="2" />
+    <answer2 message="Здравствуйте!!!" parent="3" />
+    <answer3 message="Хай!!!" parent="2" />
+    <answer4 message="Я тебя убью!!!" parent="0" func="UserAtttac" arg1="TalkPawn"/>
+  </dialog1>
+  <dialog2 message="Как дела?">
+    <answer1 message="Отлично" parent="4" />
+    <answer2 message="Хорошо" parent="4" />
+    <answer3 message="Нормально" parent="4" />
+    <answer4 message="Плохо" parent="4" />
+    <answer5 message="Отвратительно" parent="4" />
+    <answer6 message="Дважды отвратительно" parent="4" />
+  </dialog2>
+  <dialog3 message="А что так оффициально???">
+    <answer1 message="Не знаю" parent="2" />
+    <answer2 message="Так надо (грубо)" parent="0" />
+    <answer3 message="Я тебя убью!!!" parent="0" func="UserAtttac" arg1="TalkPawn" arg2="1000"/>
+  </dialog3>
+  <dialog4 message="Понятно">
+    <answer1 message="Пока!!!" parent="0" />
+  </dialog4>
+</dialogs>
