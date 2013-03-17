@@ -75,10 +75,10 @@ function PauseMenuEvent(int intEvent)
 			ShowPauseMenu();
 			break;
 		case 1:
-			say("start menu");
+			ConsoleCommand("Disconnect");
 			break;
 		case 2:
-			say("exit game");
+			ConsoleCommand("Quit");
 			break;
 		default:
 			break;
