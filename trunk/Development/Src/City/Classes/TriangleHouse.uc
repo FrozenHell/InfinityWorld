@@ -34,6 +34,12 @@ delegate GetPlayerViewPoint(out vector out_Location, out Rotator out_rotation);
 
 // --------- функции ---------
 
+// возвращает число от 0 до 4 (два бита из числа a в позиции b*2)
+private function int is2bit(int a, int b)
+{
+	return((a >> (b + b)) % 4);
+}
+
 event Destroyed()
 {
 	local MyHouse localBlock;
@@ -62,7 +68,7 @@ function Gen(Pawn locPawn, int len, int wid, int hei, int type, int size, int se
 	GenSeed = seed;
 	HouseType = type;
 
-	DrawTriHousePart(0, 0, Rotation.Yaw/RadToUnrRot, type, size);
+	DrawTriHousePart(0, 0, Rotation.Yaw/RadToUnrRot, type, size, 0);
 }
 
 function MyHouse DrawBloxx(float posX, float posY, float angle, int seedMod, int type) // type либо 1 либо 2
@@ -151,7 +157,7 @@ function DrawCenter(float posX, float posY, float floor, float angle, Myhouse bl
 			if (j == Width - i)
 			{
 				addr = block1.Length - 1 + (block1.Width - i) * block1.Length + floor * block1.Length * block1.Width;
-				if (TestWall(block1.Cells[addr].South) == None)
+				if (is2bit(block1.MyData.NavigationData[4 + addr], 1) != 1)
 					BindNodes(localNode1, block1.Cells[addr].NodeNorth);
 			}
 			else
@@ -161,8 +167,18 @@ function DrawCenter(float posX, float posY, float floor, float angle, Myhouse bl
 
 			if (j == Width - 1)
 			{
-				//addr = block3.Length - 1 + (block3.Width - i) * block3.Length + floor * block3.Length * block3.Width;
-				//BindNodes(localNode1, block3.Cells[addr].NodeNorth);
+				if (unormalBranch != 3)
+				{
+					addr = block3.Length - 1 + (i - 1) * block3.Length + floor * block3.Length * block3.Width;
+					if (is2bit(block3.MyData.NavigationData[4 + addr], 1) != 1)
+						BindNodes(localNode1, block3.Cells[addr].NodeNorth);
+				}
+				else
+				{
+					addr = 0 + (block1.Width - i) * block3.Length + floor * block3.Length * block3.Width;
+					if (is2bit(block3.MyData.NavigationData[4 + addr], 1) != 1)
+						BindNodes(localNode1, block3.Cells[addr].NodeSouth);
+				}
 			}
 			else
 			{
@@ -191,9 +207,10 @@ function DrawCenter(float posX, float posY, float floor, float angle, Myhouse bl
 				BindNodes(localNode1, localNode2);
 			}
 			else
-			{
+			{	
+				// добавляем связи с соседним зданием
 				addr = block2.Length - 1 + (block2.Width - j - 1) * block2.Length + floor * block2.Length * block2.Width;
-				if (TestWall(block2.Cells[addr].South) == None)
+				if (is2bit(block2.MyData.NavigationData[4 + addr], 1) != 1)
 					BindNodes(localNode1, block2.Cells[addr].NodeNorth);
 			}
 		}
@@ -206,7 +223,7 @@ static function BindNodes(NavNode A, NavNode B)
 	B.AddRelation(A);
 }
 
-function DrawTriHousePart(float posX, float posY, float angle, int type, int next, optional int deep = 0, optional MyHouse prevBranch) // если есть косяки, уберите optional и откомпилируйте
+function DrawTriHousePart(float posX, float posY, float angle, int type, int next, int deep = 0, optional MyHouse prevBranch) // если есть косяки, уберите optional и откомпилируйте
 {
 	local int i;
 	local MyHouse block1, block2, block3;
@@ -223,16 +240,26 @@ function DrawTriHousePart(float posX, float posY, float angle, int type, int nex
 		{
 			block1 = DrawBloxx(posX - ((sqrt(3.0)/6.0) * (Width * WidW) + (Length * WidW  + WallWidth/2)) * cos(angle+4.0/3*PI), posY - ((sqrt(3.0)/6.0) * (Width * WidW) + (Length * WidW + WallWidth/2)) * sin(angle+4.0/3*PI), angle+4.0/3*PI, SeedIterator++, 2);
 		}
-
+		
 		if ((next > 1) && (deep < 5))
+		{
 			DrawTriHousePart(posX - ((sqrt(3.0)/6.0) * (Width * WidW) + (Length * WidW + WallWidth/2)) * 2 * cos(angle+4.0/3*PI), posY - ((sqrt(3.0)/6.0) * (Width * WidW) + (Length * WidW + WallWidth/2)) * 2 * sin(angle+4.0/3*PI), PI + angle+2.0/3*PI,type , next - 1, deep + 1, block1);
+		}
 
 		block2 = DrawBloxx(posX - ((sqrt(3.0)/6.0) * Width * WidW + (Length * WidW/2 + WallWidth/2)) * cos(angle), posY - ((sqrt(3.0)/6.0) * Width * WidW + (Length * WidW/2 + WallWidth/2)) * sin(angle), angle, SeedIterator++, 1);
 
-		if (deep == 0 && next < 6)
+		if (deep == 0)
 		{
-			block3 = DrawBloxx(posX - ((sqrt(3.0)/6.0) * (Width * WidW) + (Length * WidW/2 + WallWidth/2)) * cos(angle+2.0/3*PI), posY - ((sqrt(3.0)/6.0) * (Width * WidW) + (Length * WidW/2 + WallWidth/2)) * sin(angle+2.0/3*PI), angle+2.0/3 * PI, SeedIterator++, 1);
-			unormalBranch = -1;
+			if (next < 6)
+			{
+				block3 = DrawBloxx(posX - ((sqrt(3.0)/6.0) * (Width * WidW) + (Length * WidW/2 + WallWidth/2)) * cos(angle+2.0/3*PI), posY - ((sqrt(3.0)/6.0) * (Width * WidW) + (Length * WidW/2 + WallWidth/2)) * sin(angle+2.0/3*PI), angle+2.0/3 * PI, SeedIterator++, 1);
+				unormalBranch = -1;
+			}
+			else
+			{
+				block3 = Blocks[5];
+				unormalBranch = 3;
+			}
 		}
 		else
 		{
@@ -241,11 +268,11 @@ function DrawTriHousePart(float posX, float posY, float angle, int type, int nex
 		}
 	}
 
-	if (type == 1)
+	/*if (type == 1)
 	{
 		if (next > 1)
 		{
-			DrawBloxx(posX - ((sqrt(3.0)/6.0) * Width * WidW  + Length * WidW) * cos(angle+4.0/3*PI), posY - ((sqrt(3.0)/6.0) * Width * WidW + Length * WidW) * sin(angle+4.0/3*PI), angle+4.0/3*PI, SeedIterator++, 2);
+			block1 = DrawBloxx(posX - ((sqrt(3.0)/6.0) * Width * WidW  + Length * WidW) * cos(angle+4.0/3*PI), posY - ((sqrt(3.0)/6.0) * Width * WidW + Length * WidW) * sin(angle+4.0/3*PI), angle+4.0/3*PI, SeedIterator++, 2);
 			if (deep % 2 == 0)
 			{
 				DrawBloxx(posX - ((sqrt(3.0)/6.0) * Width * WidW + Length * WidW/2) * cos(angle+2.0/3*PI), posY - ((sqrt(3.0)/6.0) * Width * WidW + Length * WidW/2) * sin(angle+2.0/3*PI), angle+2.0/3*PI, SeedIterator++, 1);
@@ -357,7 +384,7 @@ function DrawTriHousePart(float posX, float posY, float angle, int type, int nex
 		{
 			DrawBloxx(posX - ((sqrt(3.0)/6.0) * Width * WidW + Length * WidW/2) * cos(angle), posY - ((sqrt(3.0)/6.0) * Width * WidW + Length * WidW/2) * sin(angle), angle, SeedIterator++, 1);
 		}
-	}
+	}*/
 
 	// --- begin этот блок кода следует вынести в отдельную функцию ---
 	// для всех этажей строим центральную часть
