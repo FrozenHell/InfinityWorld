@@ -4,9 +4,16 @@
  *	Creation date: 03.03.2013 01:13
  *	Copyright 2013, FHS
  */
-class LiftButton extends TouchScreen;
+class LiftButton extends TouchScreen
+	notplaceable;
 
-var() int LiftState;
+// состояние кнопки лифта
+var int LiftState;
+
+// этаж на котором расположена кнопка
+var int Floor;
+
+delegate CallLift(int newFloor);
 
 simulated event PostBeginPlay()
 {
@@ -41,6 +48,7 @@ function Use(Pawn uInstigator)
 {
 	if (LiftState == 0)
 	{
+		CallLift(Floor);
 		SetState(1);
 	}
 }
@@ -55,4 +63,5 @@ defaultproperties
 	End Object
 
 	LiftState = 0;
+	Floor = 0;
 }

@@ -11,8 +11,8 @@ function bool Start(optional bool startPaused = false)
 	super.Start(startPaused);
 	// переходим на первый кадр ролика
 	Advance(0.f);
-	PlayerOwner.PlayerInput.ResetInput();
-	PlayerOwner.Pawn.ZeroMovementVariables();
+	//PlayerOwner.PlayerInput.ResetInput();
+	//PlayerOwner.Pawn.ZeroMovementVariables();
 	return true;
 }
 

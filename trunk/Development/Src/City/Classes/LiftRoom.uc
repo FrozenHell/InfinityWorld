@@ -6,7 +6,10 @@
  */
 class LiftRoom extends HousePart;
 
-
+event PostBeginPlay()
+{
+	SetPhysics(PHYS_Interpolating);
+}
 
 defaultproperties
 {
