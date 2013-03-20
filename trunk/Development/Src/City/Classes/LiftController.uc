@@ -182,7 +182,9 @@ BEGIN:
 state OpenAndWait
 {
 BEGIN:
+	Doors[currentFloor].OpenDoor();
 	Sleep(5);
+	Doors[currentFloor].CloseDoor();
 	GetNextFloor(currentDirection);
 	if (currentDirection != 0)
 		GoToState('Moving');
