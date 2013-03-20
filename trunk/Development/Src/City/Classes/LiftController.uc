@@ -20,6 +20,8 @@ var int nextFloor;
 // кабина лифта
 var LiftRoom Room;
 
+var LiftPanel Panel;
+
 // текущее направление движения (-1, 0 или 1), меняется только по достижению нужного этажа
 var int currentDirection;
 
@@ -28,6 +30,10 @@ var int currentFloor;
 
 // локальное смещение кнопки лифта
 const LiftbuttonOffset = vect(70, 140, 80);
+
+// локальное смещение панели лифта
+const LiftPanelOffset = vect(-70, 100, 80);
+const LiftPanelRotation = rot(0, 11764080, 0);
 
 // двери на каждом этаже
 var array<LiftDoor> Doors;
@@ -48,6 +54,13 @@ function Create(Actor locPawn, int lHeight, int lBlHeight)
 	MyPawn = locPawn;
 
 	Room = Spawn(class'City.LiftRoom', MyPawn,, Location, Rotation);
+	
+	localLocation = Location;
+	localLocation.z += i * BlockHeight;
+	localLocation += vector(rotator(LiftPanelOffset) + Rotation) * VSize(LiftPanelOffset);
+	Panel = Spawn(class'City.LiftPanel', MyPawn,, localLocation, LiftPanelRotation);
+	Panel.ControlPanelAddFloor = ControlPanelAddFloor;
+	Panel.InitPanel(Height);
 
 	for (i = 0; i < Height; i++)
 	{
@@ -68,10 +81,12 @@ function CallLift(int newFloor)
 	GoToState('Moving');
 }
 
-//Выбран этаж для поездки на панели лифта
+// выбран этаж для поездки на панели лифта
 function ControlPanelAddFloor(int newFloor)
 {
-	//Выбран этаж для поездки
+	nextFloor = newFloor;
+	Buttons[newFloor].SetState(1);
+	GoToState('Moving');
 }
 
 // устанавливаем следующий этаж для путешествия direct - направление (0, если не важно)
@@ -199,6 +214,7 @@ state Moving
 	function MoveToFloor()
 	{
 		Room.MoveSmooth(vect(0.0, 0.0, 1.0) * currentDirection);
+		Panel.MoveSmooth(vect(0.0, 0.0, 1.0) * currentDirection);
 		//`log("Движусь к этажу"@nextFloor);
 	}
 
