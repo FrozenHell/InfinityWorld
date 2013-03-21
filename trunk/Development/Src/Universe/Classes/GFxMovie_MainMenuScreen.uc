@@ -6,7 +6,13 @@
  */
 class GFxMovie_MainMenuScreen extends GFxMovie_TouchScreen;
 
+delegate NewLevelChanged(int newLevel);
 
+function EventReturnLevel(int newLevel)
+{
+	`log("New level number is"@newLevel);
+	NewLevelChanged(newLevel);
+}
 
 defaultproperties
 {
