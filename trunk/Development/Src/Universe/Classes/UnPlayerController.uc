@@ -598,6 +598,16 @@ simulated event PostBeginPlay()
 	GFxPauseMenu.PauseMenuEvent = PauseMenuEvent;
 }
 
+function PlayAnnouncement(class<UTLocalMessage> InMessageClass, int MessageIndex, optional PlayerReplicationInfo PRI, optional Object OptionalObject)
+{
+	// перезаписываем функцию UTPlayerController, чтобы не слышать "Play!" при старте каждого уровня
+}
+
+reliable client function PlayStartupMessage(byte StartupStage)
+{
+	// перезаписываем функцию UTPlayerController, чтобы не видеть приветствия при старте каждого уровня
+}
+
 defaultproperties
 {
 	Name="Default__UnPlayerController"

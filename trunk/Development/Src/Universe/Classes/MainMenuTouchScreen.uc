@@ -30,24 +30,18 @@ function NewLevelChanged(int newLevel)
 	local UnPlayerController PC;
 	// передача события в GameInfo
 	
-	`log("Level might be changed");
-	
 	if (newLevel == 1)
 	{
-		`log("I want to search any PC of our game");
 		foreach AllActors(class'UnPlayerController', PC)
 		{
-			`log("I find"@PC);
 			PC.ConsoleCommand("Start un-bottest");
 		}
 	}
 	
 	if (newLevel == 2)
 	{
-		`log("I want to search any PC of our game");
 		foreach AllActors(class'UnPlayerController', PC)
 		{
-			`log("I find"@PC);
 			PC.ConsoleCommand("Start un-testhouse");
 		}
 	}
