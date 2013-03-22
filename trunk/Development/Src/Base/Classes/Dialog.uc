@@ -14,7 +14,7 @@ struct Quest
 	var String Message;
 };
 
-const EMPTY_STRING = "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+const EMPTY_STRING = "                                                                                                                                                                                                                                                               ";
 
 var int idFileG;
 var bool VarsLoaded;
@@ -70,12 +70,14 @@ function GetDialog(int idFile, int idDlg)
 {
 	local int i;
 	idFileG = idFile;
-
+	`log("File="$idFile);
+	`log("Dlg="$idDlg);
 	// заполняем значения структуры спец-строками
 	MyUStr.message = EMPTY_STRING;
 	for (i = 0; i < 6; i++)
 	{
 		MyUStr.answer[i].message = EMPTY_STRING;
+		MyUStr.answer[i].func = EMPTY_STRING;
 	}
 
 	StartDialog(idFile, idDlg, MyUstr);
@@ -98,6 +100,8 @@ function int GetAnswer(int idAns)
 {
 	// нормализуем idAns
 	idAns = idAns - 1;
+	`log("StartFunc = "$MyUstr.answer[idans].func);
+	FuncDef(MyUstr.answer[idAns].func);
 
 	// если диалог не последний
 	if (MyUstr.answer[idAns].parent != 0)
@@ -105,7 +109,7 @@ function int GetAnswer(int idAns)
 		`log("IdDialog = "$MyUstr.answer[idAns].parent);
 		// загружаем в память информацию о новом диалоге из базы
 		GetDialog(idFileG, MyUstr.answer[idAns].parent);
-		return idAns;
+		return 1;
 	}
 	return 0;
 }
@@ -148,6 +152,28 @@ function FillOptions()
 
 	// стартуем новый диалог
 	GFxDialog.NewDialog(GetLine(0));
+}
+
+function FuncDef(String Func)
+{
+	local String NameFunc;
+	local array<String> Args;
+	local int i;
+	NameFunc=Mid(Func,0,InStr(Func,"("));
+	`log("Func = "$NameFunc);
+	Func=Mid(Func,InStr(Func,"(")+1,Len(Func)-Len(NameFunc)-2);
+	Args=SplitString(Func,"','");
+	i=0;
+	for (i=0;i<Args.Length;i++)
+	{
+		if (i==0){
+			Args[i]=Mid(Args[i],1);
+		}
+		if (i==Args.Length-1){
+			Args[i]=Mid(Args[i],0,Len(Args[i])-1);
+		}
+		`log("arg"$i$"="$Args[i]);
+	}
 }
 
 DefaultProperties
