@@ -32,7 +32,7 @@ var int currentFloor;
 const LiftbuttonOffset = vect(70, 140, 80);
 
 // локальное смещение панели лифта
-const LiftPanelOffset = vect(-70, 100, 80);
+const LiftPanelOffset = vect(-70, 119, 80);
 const LiftPanelRotation = rot(0, 11764080, 0);
 
 // двери на каждом этаже
@@ -54,11 +54,11 @@ function Create(Actor locPawn, int lHeight, int lBlHeight)
 	MyPawn = locPawn;
 
 	Room = Spawn(class'City.LiftRoom', MyPawn,, Location, Rotation);
-	
+
 	localLocation = Location;
 	localLocation.z += i * BlockHeight;
 	localLocation += vector(rotator(LiftPanelOffset) + Rotation) * VSize(LiftPanelOffset);
-	Panel = Spawn(class'City.LiftPanel', MyPawn,, localLocation, LiftPanelRotation);
+	Panel = Spawn(class'City.LiftPanel', MyPawn,, localLocation, Rotation+LiftPanelRotation);
 	Panel.ControlPanelAddFloor = ControlPanelAddFloor;
 	Panel.InitPanel(Height);
 
@@ -182,6 +182,30 @@ function GetNextFloor(int direct)
 // при уничтожении
 event Destroyed()
 {
+	local LiftDoor localDoor;
+	local LiftButton localButton;
+
+	// удаляем все двери
+	foreach Doors(localDoor)
+		localDoor.Destroy();
+
+	// очищаем массив Doors
+	Doors.Remove(0, Doors.Length);
+
+	// удаляем все кнопки вызова лифта
+	foreach Buttons(localButton)
+		localButton.Destroy();
+
+	// очищаем массив Buttons
+	Buttons.Remove(0, Buttons.Length);
+
+	// удаляем панель управления
+	Panel.Destroy();
+	
+	// удаляем кабину лифта
+	Room.Destroy();
+
+	// позволяем удалить себя
 	super.Destroyed();
 }
 

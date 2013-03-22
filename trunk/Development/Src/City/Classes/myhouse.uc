@@ -98,8 +98,17 @@ simulated event PostBeginPlay()
 
 event Destroyed()
 {
+	local LiftController localLift;
+	
+	// очищаем навигационную сеть
 	ClearNavNet();
+	// очищаем €чейки здани€
 	Clear();
+	
+	// удал€ем лифты
+	foreach Lifts(localLift)
+		localLift.Destroy();
+
 	super.Destroyed();
 }
 
