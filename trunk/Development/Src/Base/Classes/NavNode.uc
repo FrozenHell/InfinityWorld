@@ -34,16 +34,4 @@ defaultproperties
 		AlwaysLoadOnServer=False
 	End Object
 	Components.Add(Sprite)
-	GoodSprite=Sprite
-
-	Begin Object Class=SpriteComponent Name=Sprite2
-		Sprite=Texture2D'EditorResources.Bad'
-		HiddenGame=true
-		HiddenEditor=true
-		AlwaysLoadOnClient=False
-		AlwaysLoadOnServer=False
-		Scale=0.25
-	End Object
-	Components.Add(Sprite2)
-	BadSprite=Sprite2
 }

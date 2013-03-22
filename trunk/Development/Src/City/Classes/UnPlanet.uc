@@ -40,7 +40,7 @@ defaultProperties
 	End Object
 	Components.add(StaticMeshComponent)
 
-	Parent_MatInst = MaterialInstanceConstant'Houses.Planets.Atmosphere1_INST'
+	//Parent_MatInst = MaterialInstanceConstant'Houses.Planets.Atmosphere1_INST'
 	MatID = 0
 	NormalMatInstLinearColor = (R=0.242034,G=0.190995,B=0.880435,A=1.000000)
 	SelectMatInstLinearColor = (R=24.2034,G=19.0995,B=88.0435,A=1.000000)

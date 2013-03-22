@@ -3246,7 +3246,7 @@ defaultproperties
 	HUDType=class'UnHUD'
 	PlayerControllerClass=class'UnPlayerController'
 	DefaultPawnClass=class'UnPawn'
-	BotClass=class'BotController'
+	//BotClass=class'BotController'
 	bPauseable=True
 	Acronym="UN"
 	bUseClassicHUD=false

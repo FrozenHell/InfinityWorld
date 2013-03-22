@@ -153,18 +153,34 @@ function DrawCenter(float posX, float posY, float floor, float angle, Myhouse bl
 			localNode1 = Spawn(class'Base.NavNode', MyPawn,, locPos, rot(0, 0, 0));
 			NavList.AddItem(localNode1);
 
-			// создаём связи
-			if (j == Width - i)
+			// если это не крайний ряд, то добавляем дополнительный блок
+			if (i < Width)
 			{
-				addr = block1.Length - 1 + (block1.Width - i) * block1.Length + floor * block1.Length * block1.Width;
-				if (is2bit(block1.MyData.NavigationData[4 + addr], 1) != 1)
-					BindNodes(localNode1, block1.Cells[addr].NodeNorth);
-			}
-			else
-			{
-				BindNodes(localNode1, localNode3);
-			}
+				wi -= WidW;
+				xp = (sqrt(3.0) / 3.0) * wi;
+				newx = xp * cos(angle) - yp * sin(angle);
+				newy = yp * cos(angle) + xp * sin(angle);
+				SpawnTriangleCenterPart(posX + newx, posY + newy, posZ, angle + DegToRad * 180);
 
+				locPos.x = posX + newx;
+				locPos.y = posY + newy;
+				locPos.z = posZ + 70;
+				locPos += Location;
+
+				localNode2 = Spawn(class'Base.NavNode', MyPawn,, locPos, rot(0, 0, 0));
+				NavList.AddItem(localNode2);
+				localNodes[j - Width + i] = localNode2;
+
+				BindNodes(localNode1, localNode2);
+			}
+			else // если это крайний ряд, то связываем с соседним домом
+			{	
+				// добавляем связи с соседним зданием
+				addr = block2.Length - 1 + (block2.Width - j - 1) * block2.Length + floor * block2.Length * block2.Width;
+				if (is2bit(block2.MyData.NavigationData[4 + addr], 1) != 1)
+					BindNodes(localNode1, block2.Cells[addr].NodeNorth);
+			}
+			
 			if (j == Width - 1)
 			{
 				if (unormalBranch != 3)
@@ -185,33 +201,17 @@ function DrawCenter(float posX, float posY, float floor, float angle, Myhouse bl
 				localNode3 = localNodes[j - Width + i];
 				BindNodes(localNode1, localNode3);
 			}
-
-			// добавляем дополнительный блок
-			if (i < Width)
+			
+			// создаём связи
+			if (j == Width - i)
 			{
-				wi -= WidW;
-				xp = (sqrt(3.0) / 3.0) * wi;
-				newx = xp * cos(angle) - yp * sin(angle);
-				newy = yp * cos(angle) + xp * sin(angle);
-				SpawnTriangleCenterPart(posX + newx, posY + newy, posZ, angle + DegToRad * 180);
-
-				locPos.x = posX + newx;
-				locPos.y = posY + newy;
-				locPos.z = posZ + 70;
-				locPos += Location;
-
-				localNode2 = Spawn(class'Base.NavNode', MyPawn,, locPos, rot(0, 0, 0));
-				NavList.AddItem(localNode2);
-				localNodes[j - Width + i] = localNode2;
-
-				BindNodes(localNode1, localNode2);
+				addr = block1.Length - 1 + (block1.Width - i) * block1.Length + floor * block1.Length * block1.Width;
+				if (is2bit(block1.MyData.NavigationData[4 + addr], 1) != 1)
+					BindNodes(localNode1, block1.Cells[addr].NodeNorth);
 			}
 			else
-			{	
-				// добавляем связи с соседним зданием
-				addr = block2.Length - 1 + (block2.Width - j - 1) * block2.Length + floor * block2.Length * block2.Width;
-				if (is2bit(block2.MyData.NavigationData[4 + addr], 1) != 1)
-					BindNodes(localNode1, block2.Cells[addr].NodeNorth);
+			{
+				BindNodes(localNode1, localNode3);
 			}
 		}
 }
