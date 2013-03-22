@@ -36,7 +36,7 @@ function UnFocus()
 }
 
 // переопределяем Use
-public function Use(Pawn uInstigator)
+public function Use(Pawn uInstigator, optional int actionIndex = 0)
 {
 	GFxMovie.Tap();
 	
@@ -53,5 +53,5 @@ defaultproperties
 		StaticMesh=StaticMesh'TouchScreen.TouchMesh'
 	End Object
 	
-	ActionName = "коснуться"
+	Actions[0] = (Name = "коснуться", bActive = true)
 }

@@ -31,20 +31,20 @@ function SetState(int locState)
 	if (LiftState == 0)
 	{
 		// лифт доступен для использования
-		ActionName = "вызвать лифт";
-		bUseable = true;
+		Actions[0].Name = "вызвать лифт";
+		Actions[0].bActive = true;
 	}
 	else
 	{
 		// мы уже вызвали лифт или он недоступен
 		//ActionName = "коснуться";
-		bUseable = false;
+		Actions[0].bActive = false;
 	}
-	
+
 	GFxMovie_LiftButton(GFxMovie).SetState(locState);
 }
 
-function Use(Pawn uInstigator)
+function Use(Pawn uInstigator, optional int actionIndex = 0)
 {
 	if (LiftState == 0)
 	{

@@ -11,25 +11,22 @@ class UsableActor extends Actor
 	placeable
 	implements(Useable);
 
+// действия, которые можно совершить над объектом
+var() array<Action> Actions;
+
 // Игровая модель для объекта
 var() const editconst StaticMeshComponent StaticMeshComponent;
-
-// Доступен ли объект для использования
-var bool bUseable;
 
 // UsableActor_ID для Event кисмета "Use UsabeActor"
 var() int Kismet_ID;
 
-// поле, отображаемое на HUD ("Нажмите F чтобы"@ActionName)
-var() String ActionName;
-
 // забрать значение ActionName
-public function String GetActionName()
+public function String GetActionName(optional int actionIndex = 0)
 {
-	return ActionName;
+	return Actions[actionIndex].Name;
 }
 
-public function Use(Pawn uInstigator)
+public function Use(Pawn uInstigator, optional int actionIndex = 0)
 {
 	// итератор foreach
 	local SequenceObject individualEvent;
@@ -55,9 +52,14 @@ public function Use(Pawn uInstigator)
 	}
 }
 
-public function bool GetUseable()
+public function bool GetUseable(optional int actionIndex = 0)
 {
-	return bUseable;
+	return Actions[actionIndex].bActive;
+}
+
+public function int GetActionsCount()
+{
+	return Actions.Length;
 }
 
 defaultproperties
@@ -80,6 +82,5 @@ defaultproperties
 	bGameRelevant=true
 	bRouteBeginPlayEvenIfStatic=false
 	bCollideWhenPlacing=false
-	ActionName="использовать"
-	bUseable = true
+	Actions[0] = (Name = "использовать", bActive = true)
 }

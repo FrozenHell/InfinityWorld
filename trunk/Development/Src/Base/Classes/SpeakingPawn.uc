@@ -7,11 +7,8 @@
 class SpeakingPawn extends UTPawn // надо будет наследовать от другого класса
 	implements(Useable);
 
-// поле, отображаемое на HUD ("Нажмите F чтобы"@ActionName)
-var() String ActionName;
-
-// Доступен ли объект для использования
-var bool bUseable;
+// действия, которые можно совершить над объектом
+var() array<Action> Actions;
 
 var Dialog Dialog;
 
@@ -39,29 +36,34 @@ function PlayAttackingSound()
 // функция вызывается из класса Dialog
 function DialogClosed()
 {
-	bUseable = true;
+	Actions[0].bActive = true;
 }
 
 // забрать значение ActionName
-public function String GetActionName()
+public function String GetActionName(optional int actionIndex = 0)
 {
-	return ActionName;
+	return Actions[actionIndex].Name;
 }
 
 // заговорить с пауном
-public function Use(Pawn uInstigator)
+public function Use(Pawn uInstigator, optional int actionIndex = 0)
 {
 	if (Dialog == None)
 		Dialog = new class'Base.Dialog';
 	Dialog.StartNewTalk(1, 1);
 	Dialog.DialogClosed = DialogClosed;
-	bUseable = false;
+	Actions[0].bActive = false;
 	//`log(Name@"был потревожен");
 }
 
-public function bool GetUseable()
+public function bool GetUseable(optional int actionIndex = 0)
 {
-	return bUseable;
+	return Actions[actionIndex].bActive;
+}
+
+public function int GetActionsCount()
+{
+	return Actions.Length;
 }
 
 defaultproperties
@@ -72,9 +74,8 @@ defaultproperties
 	//ExpectingSample = SoundCue'ourgame.Expecting_Cue'
 	//WarningSample = SoundCue'A_Gameplay.CTF.Cue.A_Gameplay_CTF_FlagAlarm_Cue'
 	//AttackingSample = SoundCue'ourgame.Attacking_Cue'  
-	
-	ActionName="говорить"
-	bUseable = true
+
+	Actions[0] = (Name = "говорить", bActive = true)
 
 	Mesh=WPawnSkeletalMeshComponent
 	Components.Add(WPawnSkeletalMeshComponent)

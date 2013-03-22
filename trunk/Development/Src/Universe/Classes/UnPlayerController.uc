@@ -33,6 +33,8 @@ var GFxMovie_HunterHUD GFxHunterHUD;
 var Pawn Pray;
 var bool bHunt;
 
+var bool bUsePressed;
+
 exec function rotator UnrRot(float pitch, float yaw, float roll)
 {
 	local rotator rota;
@@ -411,26 +413,68 @@ exec function BtnSeedSub()
 // --- конец обработчиков кнопок на тестовом уровне
 
 
+
+
 // нажали клавишу "Использовать"
-exec function use_actor()
+exec function UseActor_pressed()
+{
+	bUsePressed = true;
+	
+	// пока не истечёт таймер, его повторные запуски будут игнорироваться
+	SetTimer(1, false, 'ShowAdditionalActions');
+}
+
+// прошло время после нажатия "Использовать"
+function ShowAdditionalActions()
 {
 	local Actor hitActor;
 	local vector hitNormal, hitLocation;
 	local vector viewLocation;
 	local rotator viewRotation;
 
-	GetPlayerViewPoint(viewLocation, viewRotation);
-	HitActor = Trace(hitLocation, hitNormal, viewLocation + MaxUseRange * vector(viewRotation), viewLocation, true);
-
-	// если мы нажали на актёра, который можно использовать
-	if (Useable(HitActor) != None && Useable(HitActor).GetUseable())
+	if (bUsePressed)
 	{
-		// использовать
-		Useable(HitActor).Use(Pawn);
-		
-		GFxHUD.AddIcon(Useable(HitActor).GetActionName());
+		bUsePressed = false;
+
+		GetPlayerViewPoint(viewLocation, viewRotation);
+		HitActor = Trace(hitLocation, hitNormal, viewLocation + MaxUseRange * vector(viewRotation), viewLocation, true);
+
+		// если мы нажали на актёра, который можно использовать
+		if (Useable(HitActor) != None && Useable(HitActor).GetUseable())
+		{
+			
+		}
 	}
 }
+
+// отпустили клавишу "Использовать"
+exec function UseActor_released()
+{
+	local Actor hitActor;
+	local vector hitNormal, hitLocation;
+	local vector viewLocation;
+	local rotator viewRotation;
+	
+	// если действие не пошло в обработку длинного нажатия
+	if (bUsePressed)
+	{
+		bUsePressed = false;
+		
+		GetPlayerViewPoint(viewLocation, viewRotation);
+		HitActor = Trace(hitLocation, hitNormal, viewLocation + MaxUseRange * vector(viewRotation), viewLocation, true);
+
+		// если мы нажали на актёра, который можно использовать
+		if (Useable(HitActor) != None && Useable(HitActor).GetUseable())
+		{
+			// использовать
+			Useable(HitActor).Use(Pawn);
+
+			GFxHUD.AddIcon(Useable(HitActor).GetActionName());
+		}
+	}
+}
+
+
 
 // начинаем охоту
 exec function StartHunt()
@@ -622,4 +666,5 @@ defaultproperties
 	MaxUseRange = 150
 	HUDUsableActor = None
 	bGamePaused = false
+	bUsePressed = false
 }
