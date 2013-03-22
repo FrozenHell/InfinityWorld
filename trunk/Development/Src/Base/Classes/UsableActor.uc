@@ -41,8 +41,14 @@ public function Use(Pawn uInstigator, optional int actionIndex = 0)
 	// »щем наш SeqEvent в кисмете
 	foreach eventList(individualEvent)
 	{
-		// если это обработчик именно этого актЄра
-		if (individualEvent.IsA('SeqEvent_UseUsableActor') && SeqEvent_UseUsableActor(individualEvent).UsableActor_ID == Kismet_ID)
+		// если это обработчик нужного действи€ именно этого актЄра
+		if (
+			individualEvent.IsA('SeqEvent_UseUsableActor')
+			&&
+			SeqEvent_UseUsableActor(individualEvent).UsableActor_ID == Kismet_ID
+			&&
+			SeqEvent_UseUsableActor(individualEvent).UsableActor_ActionId == actionIndex
+			)
 		{
 			// активируем Event
 			SequenceEvent(individualEvent).CheckActivate(self, uInstigator);
