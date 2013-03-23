@@ -56,7 +56,7 @@ public function Use(Pawn uInstigator, optional int actionIndex = 0)
 	//`log(Name@"был потревожен");
 }
 
-public function bool GetUseable(optional int actionIndex = 0)
+public function bool bGetUsable(optional int actionIndex = 0)
 {
 	return Actions[actionIndex].bActive;
 }

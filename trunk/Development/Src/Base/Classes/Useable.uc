@@ -22,7 +22,7 @@ public function String GetActionName(optional int actionIndex = 0);
 public function Use(Pawn uInstigator, optional int actionIndex = 0);
 
 // доступно ли действие
-public function bool GetUseable(optional int actionIndex = 0);
+public function bool bGetUsable(optional int actionIndex = 0);
 
 // получить общее количество действий (включая неактивные) над объектом
 public function int GetActionsCount();

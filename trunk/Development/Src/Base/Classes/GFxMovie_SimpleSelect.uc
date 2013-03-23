@@ -1,13 +1,12 @@
 /**
- *	GFxMovie_PauseMenu
+ *	GFxMovie_SimpleSelect
  *
- *	Creation date: 15.03.2013 01:37
+ *	Creation date: 23.03.2013 07:42
  *	Copyright 2013, FHS
  */
-class GFxMovie_PauseMenu extends GFxMoviePlayer;
+class GFxMovie_SimpleSelect extends GFxMoviePlayer;
 
-// делегат для функции из онтроллера
-delegate PauseMenuEvent(int intEvent);
+delegate MenuEvent(int intEvent);
 
 // вызов ролика
 function bool Start(optional bool startPaused = false)
@@ -29,7 +28,7 @@ event OnClose()
 // функция, вызываемая из AS
 function OptionSelected(int optionNum)
 {
-	PauseMenuEvent(optionNum);
+	MenuEvent(optionNum);
 }
 
 // инициализация ролика
@@ -40,5 +39,5 @@ function Initialize(PlayerController pCont)
 
 defaultproperties
 {
-	MovieInfo=SwfMovie'GFUX.PauseMenu.PauseMenu'
+	//MovieInfo=
 }

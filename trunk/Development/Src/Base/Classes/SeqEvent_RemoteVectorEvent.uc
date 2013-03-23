@@ -4,7 +4,7 @@
  *	Creation date: 17.02.2013 12:58
  *	Copyright 2013, FHS
  */
-class SeqEvent_RemoveVectorEvent extends SeqEvent_RemoteEvent;
+class SeqEvent_RemoteVectorEvent extends SeqEvent_RemoteEvent;
 
 // будуща€ позици€ игрока (определ€етс€ скриптом)
 var vector Position;

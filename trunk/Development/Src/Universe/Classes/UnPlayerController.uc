@@ -7,7 +7,7 @@
 class UnPlayerController extends UTPlayerController;
 
 var MyGalaxy Galaxy;
-var MyHouse House;
+var TriangleHouse House;
 var bool bGalaxyGenerated, bHouseGenerated;
 
 // HUD
@@ -32,6 +32,9 @@ var float TestHouseAngle;
 var GFxMovie_HunterHUD GFxHunterHUD;
 var Pawn Pray;
 var bool bHunt;
+
+// вступительный ролик
+var GFxMovie_Intro StartMovie;
 
 var bool bUsePressed;
 
@@ -118,9 +121,9 @@ exec function drawhouse(optional int seed = 0)
 {
 	if (!bHouseGenerated)
 	{
-		House = Spawn(class'City.myhouse', UnPawn(Owner),, vect(0, -100, 210), rot(0, 0, 0));
+		House = Spawn(class'City.TriangleHouse', UnPawn(Owner),, vect(0, -100, 210), rot(0, 0, 0));
 		House.GetPlayerViewPoint = GetPlayerViewPoint;
-		House.gen2(UnPawn(Owner), 0, 4, 4, 5, 0);
+		House.Gen(UnPawn(Owner), 4, 4, 8, 0, 2, 14);
 		bHouseGenerated = true;
 	}
 }
@@ -440,7 +443,7 @@ function ShowAdditionalActions()
 		HitActor = Trace(hitLocation, hitNormal, viewLocation + MaxUseRange * vector(viewRotation), viewLocation, true);
 
 		// если мы нажали на актЄра, который можно использовать
-		if (Useable(HitActor) != None && Useable(HitActor).GetUseable())
+		if (Useable(HitActor) != None && Useable(HitActor).bGetUsable())
 		{
 			
 		}
@@ -464,7 +467,7 @@ exec function UseActor_released()
 		HitActor = Trace(hitLocation, hitNormal, viewLocation + MaxUseRange * vector(viewRotation), viewLocation, true);
 
 		// если мы нажали на актЄра, который можно использовать
-		if (Useable(HitActor) != None && Useable(HitActor).GetUseable())
+		if (Useable(HitActor) != None && Useable(HitActor).bGetUsable())
 		{
 			// использовать
 			Useable(HitActor).Use(Pawn);
@@ -479,14 +482,14 @@ exec function UseActor_released()
 // начинаем охоту
 exec function StartHunt()
 {
-	local Pawn locPray;
+	local HunterController locPray;
 	GFxHunterHUD = new Class'Base.GFxMovie_HunterHUD';
 	GFxHunterHUD.initialize(1);
-	foreach AllActors(class'Pawn', locPray)
+	foreach AllActors(class'HunterController', locPray)
 	{
-		if (locPray!=Pawn && locPray.IsAliveAndWell())
+		if (locPray.Pawn.IsAliveAndWell())
 		{
-			Pray = locPray;
+			Pray = locPray.Pawn;
 			break;
 		}
 	}
@@ -561,7 +564,7 @@ function UpdateRotation(float fDeltaTime)
 			PlayerHunterWin();
 	}
 	
-	CheckTouchscreens();
+	CheckUsableActors();
 	Super.UpdateRotation(fDeltaTime);
 }
 
@@ -572,23 +575,66 @@ public function SpawnPray(vector posSpawn)
 	local array<SequenceObject> eventList;
 	
 	// ищем все SeqEvent'ы нужного типа
-	WorldInfo.GetGameSequence().FindSeqObjectsByClass(class'SeqEvent_RemoveVectorEvent', true, eventList);
+	WorldInfo.GetGameSequence().FindSeqObjectsByClass(class'SeqEvent_RemoteVectorEvent', true, eventList);
 	// »щем наш SeqEvent среди собратьев его типа
 	foreach eventList(individualEvent)
 	{
 		// если это нужный SeqEvent
-		if (individualEvent.IsA('SeqEvent_RemoveVectorEvent') && SeqEvent_RemoveVectorEvent(individualEvent).EventName == 'SpawnPray')
+		if (individualEvent.IsA('SeqEvent_RemoteVectorEvent') && SeqEvent_RemoteVectorEvent(individualEvent).EventName == 'SpawnPray')
 		{
 			// передаЄм в SeqEvent позицию, в которой будем создавать бота
-			SeqEvent_RemoveVectorEvent(individualEvent).Position = posSpawn;
+			SeqEvent_RemoteVectorEvent(individualEvent).Position = posSpawn;
 			// активируем SeqEvent
 			SequenceEvent(individualEvent).CheckActivate(self, Pawn);
 		}
 	}
 }
 
+// функци€, запускаема€ при старте новой игры
+exec function StartNewGame()
+{
+	StartMovie = new Class'Universe.GFxMovie_Intro';
+	StartMovie.Initialize(self);
+	StartMovie.MenuEvent = CloseIntro;
+	StartMovie.Start(false);
+}
+
+function CloseIntro(int param)
+{
+	local float minRange;
+	local SpeakingPawn localSpPawn, NearestSpPawn;
+	local vector viewLocation;
+	local rotator viewRotation;
+
+	// закрываем и очищаем ролик
+	StartMovie.Close(false);
+	StartMovie = None;
+
+	minRange = 100000.0;
+
+	GetPlayerViewPoint(viewLocation, viewRotation);
+
+	// ищем ближайшего пауна с которым можно поговорить
+	foreach AllActors(class'SpeakingPawn', localSpPawn)
+	{
+		if (localSpPawn.bGetUsable() && VSize(viewLocation - localSpPawn.Location) < minRange)
+		{
+			minRange = VSize(viewLocation - localSpPawn.Location);
+			NearestSpPawn = localSpPawn;
+		}
+	}
+
+	// если такие нашлись, то начинаем диалог
+	if (NearestSpPawn != None)
+	{
+		NearestSpPawn.Use(Pawn);
+	}
+	
+	ConsoleCommand("Loaded");
+}
+
 // провер€ем на наличие вблизи объектов, которые можно использовать
-function CheckTouchscreens()
+function CheckUsableActors()
 {
 	local Actor hitActor;
 	local vector hitNormal, hitLocation;
@@ -599,7 +645,7 @@ function CheckTouchscreens()
 	HitActor = Trace(hitLocation, hitNormal, viewLocation + MaxUseRange * vector(viewRotation), viewLocation, true);
 
 	// если мы навели прицел на актЄра, который можно использовать
-	if (Useable(HitActor) != None && Useable(HitActor).GetUseable())
+	if (Useable(HitActor) != None && Useable(HitActor).bGetUsable())
 	{
 		// если объект - это сенсорный экран, тогда двигаем курсор по нему
 		if (TouchScreen(HitActor) != None)
@@ -637,9 +683,9 @@ simulated event PostBeginPlay()
 	GFxHUD = new Class'Universe.GFxMovie_PlayerHUD';
 	GFxHUD.Initialize();
 	
-	GFxPauseMenu = new Class'Base.GFxMovie_PauseMenu';
+	GFxPauseMenu = new Class'Universe.GFxMovie_PauseMenu';
 	GFxPauseMenu.Initialize(self);
-	GFxPauseMenu.PauseMenuEvent = PauseMenuEvent;
+	GFxPauseMenu.MenuEvent = PauseMenuEvent;
 }
 
 function PlayAnnouncement(class<UTLocalMessage> InMessageClass, int MessageIndex, optional PlayerReplicationInfo PRI, optional Object OptionalObject)

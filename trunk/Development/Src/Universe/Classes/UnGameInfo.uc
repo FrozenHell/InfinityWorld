@@ -3272,8 +3272,7 @@ defaultproperties
 	EndMessageWait=1
 	DefaultMaxLives=0
 
-	DefaultInventory(0)=class'UTWeap_LinkGun'
-	DefaultInventory(1)=class'UnWeapon_Unarmed'
+	DefaultInventory(0)=class'UnWeapon_Unarmed'
 
 	VictoryMessageClass=class'UTGame.UTVictoryMessage'
 
