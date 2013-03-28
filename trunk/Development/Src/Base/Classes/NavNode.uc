@@ -34,4 +34,17 @@ defaultproperties
 		AlwaysLoadOnServer=False
 	End Object
 	Components.Add(Sprite)
+
+	Begin Object Class=CylinderComponent Name=CollisionCylinder
+        CollisionRadius=50.0
+        CollisionHeight=50.0
+        BlockNonZeroExtent=true
+        BlockZeroExtent=true
+        BlockActors=false
+        CollideActors=true
+    End Object
+    CollisionComponent=CollisionCylinder
+    Components.Add(CollisionCylinder)
+	
+	bCollideActors=True
 }

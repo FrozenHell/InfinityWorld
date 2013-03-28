@@ -1,5 +1,12 @@
 class BotController extends AIController;
 
+/*
+
+<23:46:25> "WhyNot": если враг тебя увидел и ты вышел из его поля зрения (при этом сразу же остановился на месте), то он бежит к точке в которой ты стоишь
+<23:48:29> "WhyNot": если бегать, искать пути, блуждать, то бот будет повторять твою траекторию (частично). Он может пробежать мимо тебя в ту точку, где ты когда-то был, потом подбежать к тебе, и только тогда начнёт стрелять.
+
+*/
+
 // вспомогательный логический перечислитель
 enum AltBool
 {
@@ -64,7 +71,6 @@ var byte bHearedNA;                 // был услышан посторонний шум
 var byte bEnemyIsDown;              // враг повержен
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 /* КУБ ВЫЧИСЛЕНИЯ СОСТОЯНИЙ */
 
 var array <byte> EnteringValues;    // входящие значения 
@@ -91,6 +97,9 @@ var vector TargetLocation;
 var Pawn Enemy1;
 
 var UTWeap_RocketLauncher RL;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/* ВЫЧИСЛЕНИЕ ПУТЕЙ */
 
 var array <NavNode> _OpenSet;
 var array <NavNode> _ClosedSet;
@@ -129,7 +138,7 @@ var bool FiringWhileMove;
 
 var NavNode TNodeCameFrom;
 var NavNode NextNode;
-var bool bDestinationIsReached;
+var bool bDestinationIsReachable;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -823,7 +832,7 @@ function bool SolveBehaviour()
 }
 
 simulated event postbeginplay()
-{
+{	
     CurrentState = States.Expecting;
     SetWeights();
 }
@@ -836,64 +845,106 @@ event EnemyNotVisible()
 }  
 
 // формирование пути и последовательное указание координат для перемещения
-function vector GetNextDestinationPoint(vector CurrentLocation,optional vector FinalDestination, optional bool bFullRecalculation = false)
+function vector GetNextDestinationPoint(optional vector FinalDest, optional bool bFullRecalculation = false)
 {
 	local NavNode NN;	
 	
-	
-	if (bFullRecalculation == true)					// Если требуетсмя полный пересчет пути,
-	{
-		bDestinationIsReached = false;					// то устанавливаем по умолчанию, что пункт назначения не достигнут
-		TNodeCameFrom = none;					// и ещё не известен предыдущий узел перемещения.
-		
-		GoToPoint(FinalDestination); 					// Вызываем процедуру формирования пути.
-		
-		if (CurrentState != States.Defending && CurrentState != States.Escaping)
-		if ( _NavNode != none && CheckTheWay(_NavNode) == true )	// Проверяем, можно ли все же пойти напрямик?
-		{										// И если это так, то
-			bDestinationIsReached = true;				// сообщаем об этом
-			return Pawn.Location;					// и возвращаем расположение Pawn'в в качестве затычки
-		}
-	}		
-	
-	if (_NavNode == none)						// Если после просчета пути или просто так оказалось, что путь не нужен,
-	{			
-		bDestinationIsReached = true;					// тогда указываем, что пункта назначения можно достигнуть без узлов
-		return Pawn.Location;						// и возвращаем в качестве затычки для функции расположение самого Pawn'а
+	if (bFullRecalculation == true)	// Если требуется полный расчет пути,
+	{	`log("Full recalculation");
+		TNodeCameFrom = none;
+		bDestinationIsReachable = false;	// то устанавливаем по умолчанию, что пункт назначения не достигнут.		
+		GoToPoint(FinalDest); 		// Вызываем процедуру формирования пути.		
 	}	
-    else										// Иначе		
-	{
-		NN = _NavNode;
-		_NavNode = _NavNode.CameFrom;
-		return NN.Location;	
-	}
 	
+	if ( CheckTheWay(FinalDest) == true  )	// Eсли оказалось, что путь не нужен,
+	{	`log("Final destination is reachable"@_NavNode@CheckTheWay(FinalDest));		
+		bDestinationIsReachable = true;	// тогда указываем, что  до пункта назначения можно дойти без узлов
+		if (  FinalDest != vect(0,0,0) ) 
+			return FinalDest;		// и возвращем конечные координаты		
+		else
+			return Pawn.Location;		// или возвращаем расположение Pawn'в в качестве затычки.
+	}	
+	else						// Если путь был просчитан, или узел просто известен, тогда
+	{	`log("Using NavNode");	
+		TNodeCameFrom = _NavNode;
+		NN = _NavNode;				// Запоминаем текущий узел.
+		_NavNode = _NavNode.CameFrom;	// Заменяем текущий узел следующим.
+		return NN.Location;				// Возвращаем координаты текущего узла.		
+	}
 }
 
 // Проверка пути и расстояния до цели
 //	на возможность перемещения напрямик.
-function bool CheckTheWay( NavNode CheckedNavNode )
+function bool CheckTheWay( vector FinalDestination )
 {
 	local NavNode NN;	// Переменная узла для перечисления некоторого множества узлов
-	local float 	LengthOfWay, LengthOfStraightWay;		// длины путей напрмик и по узлам
-				LengthOfWay 			= 0.0 + VSize ( Pawn.Location - _NavNode.Location ) + VSize ( Enemy.Location - _NavNode.Location );
-				LengthOfStraightWay 	= 0.0;	
+	local float 	LengthOfStraightWay, LengthOfWay;	// длины путей напрямик и по узлам	
 	
-	NN = CheckedNavNode;
-		if (_NavNode != none)
-			do
-			{
-				LengthOfWay += NN.f;
-				NN = NN.CameFrom;
-			}
-			until (NN == none);	
-	
-	LengthOfStraightWay = VSize (Pawn.Location - Enemy.Location);	
-	
-	if ( Trace (  HitLocation,  HitNormal, Enemy.Location, Pawn.Location,true ) == Enemy && LengthOfStraightWay < LengthOfWay )
+	if ( _NavNode == none )
 		return true;
-	else 
+		
+	LengthOfWay 			= 0.0 + VSize ( Pawn.Location - _NavNode.Location ) + VSize ( FinalDestination - _NavNode.Location );
+	LengthOfStraightWay 	= 0.0;	
+	
+	NN = _NavNode;
+	if (_NavNode != none)
+		do
+		{
+			LengthOfWay += NN.f;
+			NN = NN.CameFrom;
+		}
+		until (NN == none);	
+	
+	LengthOfStraightWay = VSize (Pawn.Location - FinalDestination);	
+	
+	if ( Trace (  HitLocation,  HitNormal, FinalDestination, Pawn.Location,true ) == none && LengthOfStraightWay < LengthOfWay)
+	{	`log("The straight way is better");
+		return true;
+	}
+	else
+	{	`log("The node's way is better");
 		return false;
+	}
+}
+
+
+// Получить эффективную позицию для атаки
+function vector GetFiringPos(vector AimLoc)
+{
+	local float x;	
+	local Actor _Actor;
+	local NavNode locNode, TargetNode;
+	
+	// Сначала узнаем о возможных препядствиях, находящихся между Pawn'ом и AimLoc
+	_Actor = Trace (  HitLocation,  HitNormal, AimLoc + Normal(Pawn.Location - AimLoc) * FiringDistance , AimLoc, true);
+	if (_Actor != none)
+		`log (_Actor@_Actor.Location@HitLocation );
+	
+	// Если Pawn расположен относительно AimLoc дальше FiringDistance
+	// u если никакого препядствия не было обнаружено	
+	if ( VSize( Pawn.Location - AimLoc ) != FiringDistance && IsZero(HitLocation) )
+		return AimLoc + Normal(Pawn.Location - AimLoc) * FiringDistance;	// возвращаем нормальную позицию для атаки
+	else
+	{	`log("The wall is very close");
+		x = 1000.0;
+		foreach OverlappingActors(class'NavNode', locNode, 1000.0, AimLoc,false)	// Работаем с каждым узлом в радиусе SearchR 
+		{		
+			//`log ( Abs (VSize(AimLoc - locNode.Location) - FiringDistance) );
+			if ( Abs (VSize(AimLoc - locNode.Location) - FiringDistance) < x 
+				&& 
+			Trace (  HitLocation,  HitNormal, locNode.Location, AimLoc, true ) == none )		
+			{	// Если дистанция между AimLoc'ом и узлом меньше минимальной дистанции, то
+				x = Abs (VSize(AimLoc - locNode.Location) - FiringDistance);		// запоминаем меньшую дистанцию	
+				TargetNode = locNode; //`log ("TargetNode"@TargetNode);
+			}	
+			
+		}
+		//x = VSize (AimLoc - HitLocation) - 50;		
+		//return AimLoc + Normal(Pawn.Location - AimLoc) * x;		
+		
+		return TargetNode.Location;
+	}
+	
 }
 
 // Функция, возвращающая координаты позиции для обороны
@@ -906,31 +957,25 @@ function vector GetDefendingPoint()
 	if ( Enemy != none)
 	{	
 	foreach AllActors(class'NavNode', locNode)						// Работаем с каждым узлом.	
-		if ( 1000 - VSize (Enemy.Location - locNode.Location) < 100 && Trace (  HitLocation,  HitNormal, locNode.Location, Enemy.Location,true ) == none )
+		if ( DefendingDistance - VSize (Enemy.Location - locNode.Location) < 100 && Trace (  HitLocation,  HitNormal, locNode.Location, Enemy.Location,true ) == none )
 			break;	
 	
 	if ( locNode == none ) 
 		foreach AllActors(class'NavNode', locNode)						// Работаем с каждым узлом.	
-			if ( VSize (Enemy.Location - locNode.Location) > 1000 && Trace (  HitLocation,  HitNormal, locNode.Location, Enemy.Location,true ) == none)
+			if ( DefendingDistance - VSize (Enemy.Location - locNode.Location) < 100 )
 				break;
 	
 	if ( locNode == none ) 
 		foreach AllActors(class'NavNode', locNode)						// Работаем с каждым узлом.	
-			if ( 1000 - VSize (Enemy.Location - locNode.Location) < 100 )
-				break;
-	
-	if ( locNode == none ) 
-		foreach AllActors(class'NavNode', locNode)						// Работаем с каждым узлом.	
-			if ( 1000 - VSize (Enemy.Location - locNode.Location) > 1000 )
-				break;				
-	}
+			if ( DefendingDistance - VSize (Enemy.Location - locNode.Location) < DefendingDistance )
+				break;	
 		
-	//`log("Defending node"@locNode);
-	
+	`log("Defending node"@locNode);	
 	if ( locNode != none )
 		return locNode.Location;	
 	else 
 		return Enemy.Location + Normal(Pawn.Location - Enemy.Location) * DefendingDistance;
+	}
 }
 
 function vector GetEscapingPoint()
@@ -941,16 +986,17 @@ function vector GetEscapingPoint()
 	{
 	
 	foreach AllActors(class'NavNode', locNode)						// Работаем с каждым узлом.	
-		if ( VSize (Enemy.Location - locNode.Location) > 2000 && Trace (  HitLocation,  HitNormal, locNode.Location, Enemy.Location,true ) != none )
+		if ( VSize (Enemy.Location - locNode.Location) > EscapingDistance && Trace (  HitLocation,  HitNormal, locNode.Location, Enemy.Location,true ) != none )
 			break;	
 	
+	if ( locNode == none ) 
 	foreach AllActors(class'NavNode', locNode)						// Работаем с каждым узлом.	
-		if ( VSize (Enemy.Location - locNode.Location) > 1000 && Trace (  HitLocation,  HitNormal, locNode.Location, Enemy.Location,true ) != none )
+		if ( VSize (Enemy.Location - locNode.Location) > EscapingDistance / 2 && Trace (  HitLocation,  HitNormal, locNode.Location, Enemy.Location,true ) != none )
 			break;	
-	}
 	
+	if ( locNode == none ) 
 	foreach AllActors(class'NavNode', locNode)						// Работаем с каждым узлом.	
-		if ( VSize (Enemy.Location - locNode.Location) > 2000 )
+		if ( VSize (Enemy.Location - locNode.Location) > EscapingDistance )
 			break;	
 	
 	`log("Escaping node"@locNode);
@@ -959,6 +1005,8 @@ function vector GetEscapingPoint()
 		return locNode.Location;	
 	else 
 		return Enemy.Location + Normal(Pawn.Location - Enemy.Location) * EscapingDistance;
+		
+	}
 }
 
 
@@ -991,40 +1039,46 @@ event TakeDamage(int DamageAmount, Controller EventInstigator, vector HitLocatio
 	// Super.TakeDamage(DamageAmount, EventInstigator, HitLocation,иMomentum, DamageType, HitInfo, DamageCauser);
 }
 */
-// бежать к точке
+
+// ОПРЕДЕЛЕНИЕ ПУТИ
 function GoToPoint(vector endPoint, optional actor _actor = none)
 {
 	local NavNode 	locNode, 		// Переменная узла для перечисления некоторого множества узлов
 					StartNode, 	// Первый узел в пути
 					TargetNode;	// Конечный узел
 					
-	local float 	minRange1, 		// расстояние между ближайшим узлом и расположением Pawn'а
-				minRange2;		// расстояние между ближайшим узлом и endPoind'ом
+	local float 	Range; 		// расстояние между ближайшим узлом и расположением Pawn'а
 	
-	minRange1 = 1000000.0;
-	minRange2 = 1000000.0;
-
-	foreach AllActors(class'NavNode', locNode)						// Работаем с каждым узлом.
-	{ 
-		if (VSize(Pawn.Location - locNode.Location) < minRange1  )		// Если дистанция между Pawn'ом и узлом меньше минимальной дистанции, то
-		if ( Trace (  HitLocation,  HitNormal, locNode.Location, Pawn.Location, true ) == none )
+	Range = 1000.0;
+	foreach OverlappingActors(class'NavNode', locNode, 1000.0, Pawn.Location,false)	// Работаем с каждым узлом в радиусе SearchR 	
+		if (VSize(Pawn.Location - locNode.Location) < Range && Trace (  HitLocation,  HitNormal, locNode.Location, Pawn.Location, true ) == none )		// Если дистанция между Pawn'ом и узлом меньше минимальной дистанции, то
 		{
-			minRange1 = VSize(Pawn.Location - locNode.Location);		// запоминаем меньшую дистанцию
+			Range = VSize(Pawn.Location - locNode.Location);		// запоминаем меньшую дистанцию
 			StartNode = locNode;								// и запоминаем этот узел.			
-		}
-
-		if (VSize(endPoint - locNode.Location) < minRange2 )			// то же самое по отношению к endPoind'у
-		if ( Trace (  HitLocation,  HitNormal, locNode.Location, endPoint, true ) == none )
-		{
-			minRange2 = VSize(endPoint - locNode.Location);
-			TargetNode = locNode;			
-		}
-	}	
+		}		
 	
-	if (VSize(Pawn.Location - endPoint) <= VSize(Pawn.Location - StartNode.Location) ) // Если путь от Pawn'а к endPoind'у короче, чем от  Pawn'а к узлу
+	Range = 1000.0;
+	foreach OverlappingActors(class'NavNode', locNode, 1000.0, endPoint,false)	// Работаем с каждым узлом в радиусе SearchR 
+		if (VSize(endPoint - locNode.Location) < Range && Trace (  HitLocation,  HitNormal, locNode.Location, endPoint, true ) == none )	
+		{
+			Range = VSize(endPoint - locNode.Location);
+			TargetNode = locNode;			
+		}		
+	//`log ("GoToPoint"@StartNode@TargetNode);
+	
+	if (StartNode == none || TargetNode == none)
+	{	`log("Node not found"@StartNode@TargetNode);
 		_NavNode = None;	// то возвращаем пустой узел
+		return;
+	}	
+	if (VSize(Pawn.Location - endPoint) <= VSize(Pawn.Location - StartNode.Location) && Trace (  HitLocation,  HitNormal, endPoint, Pawn.Location, true ) == none ) // Если путь от Pawn'а к endPoind'у короче, чем от  Pawn'а к узлу		
+	{	`log("Straight is better");
+		_NavNode = None;	// то возвращаем пустой узел
+	}
 	else
+	{	`log("Calculating path...");
 		_NavNode = CreatePath(StartNode, TargetNode);	// иначе все-таки возвращаем определенный навигационный узел
+	}
 }
 
 // создать путь из нод для путешествия
@@ -1114,37 +1168,148 @@ function ToOpenSet(NavNode first, NavNode last)
 	_OpenSet[_OpenSet.Length] = first;
 }
 
+/*ПРОВЕРКА ПОКАЗАТЕЛЕЙ
+	Выполняется проверка всех имеющих значения для смены состояний показателей
+	и вызов процедуры смены состояния SolveBehaviour */
+function CheckValues()
+{
+	//EXPECTING
+	if ( CurrentState == States.Expecting)
+	{
+		if (EnemyIsFoundedTimeInterval >= EnemyIsFoundedCriticalTimeIntervalForWarning)
+		{ 	`log("I am ready for warning!");		
+			bEFWh = 1; bEFWl = 0;
+		}
+		else
+		{
+			bEFWh = 0; bEFWl = 1;
+		}
+			
+		if (EnemyIsFoundedTimeInterval >= EnemyIsFoundedCriticalTimeInterval)
+		{	`log("I am ready for attacking!");		
+			bEFh = 1; bEFl = 0;		   
+		}
+		else
+		{
+			bEFh = 0; bEFl = 1;		   
+		}
+	}
+ 
+	//WARNING
+	if ( CurrentState == States.Warning)
+	{
+		if (bEnemyIsFounded == 1)
+			`log("I am ready for attacking!");
+		
+		if (SilentEnvironmentTimeInterval >= SilentEnvironmentCriticalTimeInterval)
+		{	`log("I am ready for expecting!");
+			bSEh = 1; bSEl = 0;
+		}
+		else
+		{
+			bSEh = 0; bSEl = 1;
+		}
+	}
+	
+	//ATTACKING
+	if ( CurrentState == States.Attacking)
+	{
+		if ( Enemy == none )
+		{	`log("I am ready for expecting!");
+			bEnemyIsDown = 1;
+		}
+		else
+			bEnemyIsDown = 0;
+		
+		if (Pawn.Health <  (Pawn.default.Health / 2) )
+		{	`log("I am ready for defending!");
+			bHDl = 1; bHDh = 0;
+		}
+		else
+		{
+			bHDl = 0; bHDh = 1;
+		}
+	}
+
+	//DEFENDING
+	if ( CurrentState == States.Defending)
+	{
+		if ( Enemy == none )
+		{	`log("I am ready for expecting!");
+			bEnemyIsDown = 1;
+		}
+		else
+		{
+			bEnemyIsDown = 0;
+		}
+			
+		if (Pawn.Health >  (Pawn.default.Health / 2) )
+		{	`log("I am ready for attacking!");
+			bHDl = 0; bHDh = 1;
+		}
+		else
+		{
+			bHDl = 1; bHDh = 0;
+		}
+			
+		if (Pawn.Health < (Pawn.default.Health / 4) )
+		{    
+			bHFl = 1; bHFh = 0; 
+		}        
+		else
+		{
+			bHFl = 0; bHFh = 1; 
+		}
+			
+		if ( ShootsAbsenceAfterFight >= ShootsAbsenceCriticalIntreval )
+		{	
+			bSAh = 1; bSAl = 0; bNoHearingShoots = 1; 
+		}
+		else
+		{
+			bSAh = 0; bSAl = 1; bNoHearingShoots = 0; 
+		}
+			
+		if (bSAh == 1 && bHFl == 1)
+			`log("I am ready for escaping!"); 
+	}
+
+	// ESCAPING
+	if ( CurrentState == States.Escaping )
+	{
+		if ( Enemy == none )
+		{	//`log("I am ready for expecting!");
+			bEnemyIsDown = 1;
+		}
+		else
+		{
+			bEnemyIsDown = 0;
+		}	
+        
+		if (Pawn.Health >  (Pawn.default.Health / 4) )
+		{	//`log("I am ready for defending!");
+			bHFl = 0; bHFh = 1;
+		}	
+		else
+		{
+			bHFl = 1; bHFh = 0;
+		}	
+	}
+	
+	SolveBehaviour();
+}
 
 // ОПИСАНИЕ ПОВЕДЕНИЯ В СОСТОЯНИИ СПОКОЙСТВИЯ
 auto state Expecting
 { 
     function SetLimits()     // установка пороговых значений
     {
-        EnemyIsFoundedCriticalTimeIntervalForWarning = 0.0;
+        EnemyIsFoundedCriticalTimeIntervalForWarning = 0.1;
         EnemyIsFoundedCriticalTimeInterval = 0.5;
         Amnesium_limit = 2.0;
     }
     
-    
-    function CheckValues()  // проверка сигналов
-    {
-        if (EnemyIsFoundedTimeInterval >= EnemyIsFoundedCriticalTimeIntervalForWarning)
-        {
-            `log("I am ready for warning!");
-            //Pawn.DoJump(true);
-            bEFWh = 1; bEFWl = 0;
-        }
-        
-        if (EnemyIsFoundedTimeInterval >= EnemyIsFoundedCriticalTimeInterval)
-        {
-            `log("I am ready for attacking!");
-            bEFh = 1; bEFl = 0;
-            Enemy = SomePawn;
-            SolveBehaviour();
-        }
-    }
-    
-    function ResetValues() // обнуление сигналов и значений
+	function ResetValues() // обнуление сигналов и значений
     {
         Enemy = none;
         SomePawn = none;
@@ -1167,15 +1332,15 @@ auto state Expecting
     
     event SeePlayer (Pawn Seen) // игрок-враг виден в данный момент
     {
-		if (Enemy == none || Enemy != Seen)       // если Контроллер ещё не запоминал этого Pawn'а
-		Enemy = Seen;                                           // то запоминаем его.
+		if (Enemy != Seen && Trace (  HitLocation,  HitNormal, Seen.Location, Pawn.Location, true )  == Seen)	// если Контроллер ещё не запоминал этого Pawn'а
+			Enemy = Seen;                          	// то запоминаем его.		
 		
-		if (Enemy != none)                                      // Теперь, если враг отмечен в пямаяти,
+		if ( Enemy != none )	// Теперь, если враг отмечен в памяти, тогда		
 		{
-			SomePawn = Enemy;                           // копируем образ в резервную память,
-			Enemy_LastLocation = Enemy.Location;                // и его расположение,
-			Enemy_LastRotation = Enemy.Rotation;                // и его ориентацию отдельно.
-			Enemy_FocalPoint = Enemy.Controller.GetFocalPoint();// И направление взгляда ещё.
+			SomePawn = Enemy;                           	// копируем образ в резервную память,
+			Enemy_LastLocation = Enemy.Location;              	// и его расположение,
+			Enemy_LastRotation = Enemy.Rotation;            	// и его ориентацию отдельно.
+			Enemy_FocalPoint = Enemy.Controller.GetFocalPoint();	// И направление взгляда ещё.
 		}
 		if (bEnemyIsFounded != 1)                               // Если факт обнаружения врага ещё не отмечен
 		{
@@ -1191,23 +1356,20 @@ auto state Expecting
     {
         If ( Enemy != none && CanSee(Enemy) && LineOfSightTo(Enemy))    // если враг есть и он обнаружен, то
         {
-            Amnesium = 0;                                               // обнуляем счетчик забывания
-            CheckValues();                                              // перепроверяем счетчики времени
-            if ( bEFh == 1)  SolveBehaviour();                          // и определяем новое состояние (если есть повод).
-            else Enemy = none;                                          // Иначе обнуляем образ врага
+            Amnesium = 0;                                         	// обнуляем счетчик забывания
+            CheckValues();                                             // перепроверяем счетчики времени
+            if ( bEFh != 1)        				                  	// и если порог обнаружения не достигнут, тогда
+				Enemy = none;                                        // обнуляем образ врага
         }
         else 
-        if ( bEnemyIsFounded == 1 )                                     // иначе если враг БЫЛ замечен
+        if ( bEnemyIsFounded == 1 )                                	// иначе если враг БЫЛ замечен
         {
-            if ( Amnesium < Amnesium_limit || bEFh != 1 )               // Если ещё порог забывания не достигнут, то
-            Amnesium += DeltaTime;                                      // учитываем длительность отсутствия врага
-            if ( Amnesium >= Amnesium_limit )                           // и если длительность забывания выше порога
-            {
-                `log(EnemyIsFoundedTimeInterval);
-                `log("lol");
-                CheckValues();                                          // на всякий пожарный перепроверяем сигналы
-                if (!SolveBehaviour())                                  // и если после проверки поведение не меняется
-                ResetValues();                                          // всё обнуляем и всё сначала
+            if ( Amnesium < Amnesium_limit || bEFh != 1 )             		// Если ещё порог забывания не достигнут, то
+				Amnesium += DeltaTime;                                    // учитываем длительность отсутствия врага
+            if ( Amnesium >= Amnesium_limit )                           	// и если длительность забывания выше порога
+            {               
+                CheckValues();                                       	// на всякий пожарный перепроверяем сигналы                
+                ResetValues();                                         // всё обнуляем и всё сначала
             }
         }
     }
@@ -1224,22 +1386,6 @@ auto state Expecting
 state Warning
 {
     
-    function CheckValues() // проверка сигналов
-    {
-        if (bEnemyIsFounded == 1)
-        {
-            `log("I am ready for attacking!");
-            SolveBehaviour();
-        }
-        
-        if (SilentEnvironmentTimeInterval >= SilentEnvironmentCriticalTimeInterval)
-        {
-            `log("I am ready for expecting!");
-            bSEh = 1; bSEl = 0;
-            SolveBehaviour();
-        }
-    }
-    
     function ResetValues() // обнуление сигналов и значений
     {
         SilentEnvironmentTimeInterval = 0.0;
@@ -1250,8 +1396,7 @@ state Warning
     function BeginState (Name PreviousStateName) // Инициализация состояния
     {
         ResetValues();
-        `log("I am in warning state");
-        `log(Enemy);
+        `log("I am in warning state");        
         //SpeakingPawn(Pawn).PlayWarningSound();
     }
     
@@ -1286,14 +1431,13 @@ state Warning
     
     Begin:
     
-    SetFocalPoint(Enemy_LastLocation);                      // Pawn устремляет взгляд в сторону последней позиции видимого врага.
-    MoveTo( GetNextDestinationPoint(Pawn.Location,Enemy_LastLocation) );  // Затем Pawn перемещается к этой позиции.
-    If (bDestinationIsReached == false) GoTo('Begin');     // Если путь состоит из нескольких узлов, то снова перемещение в следующей позиции,
-    else bDestinationIsReached = false;                     // а иначе - ничего.
-    
-    `log("Focal"@Enemy_FocalPoint);
-    SetFocalPoint(Enemy_FocalPoint);                        // Pawn устремляет свой взгляд в направлении вектора передвижения врага.
-    
+    SetFocalPoint(Enemy_LastLocation);                      // Pawn устремляет взгляд в сторону последней позиции видимого врага.    	
+	MoveTo( GetNextDestinationPoint(Enemy_LastLocation, true) );  			//  Pawn перемещается поближе к позиции вероятного врага
+			
+			while ( bDestinationIsReachable != true )										// Если путь состоит из нескольких узлов, 				
+				MoveTo( GetNextDestinationPoint(Enemy_LastLocation) );	// то снова перемещение в следующей позиции,				
+				MoveTo(Enemy_LastLocation);		
+    SetFocalPoint(Enemy_FocalPoint);                        // Pawn устремляет свой взгляд в направлении вектора передвижения врага.    
     
     Inspection: // Pawn осматривается.
     Rotate();
@@ -1302,8 +1446,9 @@ state Warning
     
     End:
     if (SilentEnvironmentTimeInterval >= SilentEnvironmentCriticalTimeInterval)
-    {
+    {		
         //SpeakingPawn(Pawn).PlayExpectingSample();
+		pawn.LockDesiredRotation(False);
         MoveTo(PawnLocation);
         SetFocalPoint(PawnFocalPoint);
         CheckValues();
@@ -1318,24 +1463,6 @@ State Attacking
     {
         bEnemyIsDown = 0;
         bHDl = 0; bHDh = 1;
-    }
-    
-    function CheckValues()
-    {
-        
-        if ( Enemy == none )
-        {
-            `log("I am ready for expecting!");
-            bEnemyIsDown = 1;
-            SolveBehaviour();
-        }
-        
-        if (Pawn.Health <  (Pawn.default.Health / 2) )
-        {
-            `log("I am ready for defending!");
-            bHDl = 1; bHDh = 0;
-            SolveBehaviour();
-        }
     }
     
     function BeginState (Name PreviousStatename)
@@ -1362,6 +1489,13 @@ State Attacking
     event Tick(float DeltaTime)
     {
         CheckValues();
+		
+		if ( Trace (  HitLocation,  HitNormal, Enemy.Location, Pawn.Location,true ) == Enemy )
+		if ( vector(Pawn.GetViewRotation()) dot Normal(Enemy.Location - Pawn.Location) > 0.75 )
+		{
+			Pawn.StartFire(0);   	// выстрелить			
+			Pawn.StopFire(0);	// остановить стрельбу
+		}
     }
     
     function EndState (Name NextStateName)
@@ -1371,29 +1505,26 @@ State Attacking
     
 Begin:
     if (Enemy != none)
-    {   `log("1" @ Trace (  HitLocation,  HitNormal, Enemy.Location, Pawn.Location, true )  != Enemy);     
-        if ( VSize (Enemy.Location - Pawn.Location) > FiringDistance + 50 || Trace (  HitLocation,  HitNormal, Enemy.Location, Pawn.Location, true )  != Enemy )  					// если враг слишком далеко или его не видно сквозь препядствие
+    {   `log("1----------------------------------------------------------------------------------------------");     
+		
+        IF	// если враг слишком далеко или его не видно сквозь препядствие,
+			( VSize (Enemy.Location - Pawn.Location) > FiringDistance + 50 || Trace (  HitLocation,  HitNormal, Enemy.Location, Pawn.Location, true )  != Enemy )	// тогда				
         {	`log("2");     				
-			MoveTo( GetNextDestinationPoint(Pawn.Location,Enemy.Location, true) );  			//  Pawn перемещается поближе к врагу
-			
-			while ( bDestinationIsReached != true )										// Если путь состоит из нескольких узлов, 
+			MoveTo( GetNextDestinationPoint( GetFiringPos(Enemy.Location), true), Enemy); //  Выполняется цепочка перемещений.				
+			while ( bDestinationIsReachable != true )							// Если путь состоит из нескольких узлов, 
 			{	`log("3");     			
-				MoveTo( GetNextDestinationPoint(Pawn.Location,Enemy.Location, false), Enemy );	// то снова перемещение в следующей позиции,			
+				MoveTo( GetNextDestinationPoint( GetFiringPos(Enemy.Location) ), Enemy);	// то  перемещаемся к следующей позиции				
 			}
-			`log("4"@Enemy.Location);     
-			if ( Trace (  HitLocation,  HitNormal, Enemy.Location, Pawn.Location,true ) == Enemy )
-				MoveTo(Enemy.Location, Enemy, FiringDistance);
+			`log("4-----------------------------------------------------------------------------------------");     
+			if ( Trace (  HitLocation,  HitNormal, Enemy.Location, Pawn.Location,true ) == Enemy ) // Если сейчас враг виден, тогда
+				MOVETO ( GetFiringPos(Enemy.Location) , Enemy);			
 			else 
 				GoTo('Begin');
-			
-			GoTo('Begin');     
 		}
         else
 		{	`log("5");     		
-			MoveToward(Enemy, Enemy, FiringDistance );                                       // просто смотреть в его сторону			
-			Pawn.StartFire(0);                                              // выстрелить
-			Pawn.StopFire(0);
-        
+			MoveToward(Enemy, Enemy, FiringDistance );	// просто смотреть в его сторону	
+			
 			goto('End');
 		}
     } 
@@ -1416,37 +1547,7 @@ End:
 
 // ОПИСАНИЕ ПОВЕДЕНИЯ В СОСТОЯНИИ ЗАЩИТЫ
 State Defending
-{
-    function CheckValues() // проверка сигналов
-    {
-        if ( Enemy == none )
-        {
-            `log("I am ready for expecting!");
-            bEnemyIsDown = 1;
-            
-        }
-        
-        if (Pawn.Health >  (Pawn.default.Health / 2) )
-        {
-            `log("I am ready for attacking!");
-            bHDl = 0; bHDh = 1;
-            
-        }
-        
-        if (Pawn.Health < (Pawn.default.Health / 4) )
-        {    bHFl = 1; bHFh = 0; }
-        
-		
-		if ( ShootsAbsenceAfterFight >= ShootsAbsenceCriticalIntreval )
-		{	bSAh = 1; bSAl = 0; bNoHearingShoots = 1; }
-		
-		if (bSAh == 1 && bHFl == 1)
-			`log("I am ready for escaping!");
-        
-        SolveBehaviour();
-        
-        
-    }
+{   
     
     function ResetValues() // обнуление сигналов и значений
     {
@@ -1470,15 +1571,12 @@ State Defending
     
     event Tick (float DeltaTime)
     {
-		local vector Vector1, Vector2;
+		local float Angle;
 		
-		Vector1 = Normal(Pawn.Location-Enemy.Location);
-		Vector2 = Enemy.GetPawnViewLocation();
-		
-		`log ("Cos"@Vector1 dot Vector2 );
+		Angle = vector(Enemy.GetViewRotation()) dot Normal(Pawn.Location - Enemy.Location);		
 		
 		if ( Enemy != none )		
-			if ( Enemy.Weapon.IsFiring == true && Vector1 dot Vector2 > 0.75 )
+			if ( Enemy.Weapon.IsFiring() && Angle > 0.80 )
 				ShootsAbsenceAfterFight = 0.0;
 			else
 				ShootsAbsenceAfterFight += DeltaTime;
@@ -1499,28 +1597,21 @@ State Defending
         StopLatentExecution();
 
     }
-    /*  if ( VSize ( Pawn.Location - Enemy.Location ) < DefendingDistance)
-			MoveToward( Enemy , Enemy , DefendingDistance );
-        else 
-			if ( VSize ( Pawn.Location - Enemy.Location ) < DefendingDistance)
-				if (Enemy != none)
-					MoveTo ( Enemy.Location + Normal(Pawn.Location - Enemy.Location) * DefendingDistance , Enemy);
-				else GoTo('End'); */
-    Begin:
-    
+  
+    Begin:    
     
     HoldingDistance:
    if (Enemy != none)
     {   `log("1");     
-        if ( VSize ( Pawn.Location - Enemy.Location ) + 50 < DefendingDistance)  					// если враг слишком близко
+        if ( VSize ( Pawn.Location - Enemy.Location ) < DefendingDistance - 50)  					// если враг слишком близко
         {	`log("2");     				
-			MoveTo( GetNextDestinationPoint(Pawn.Location, GetDefendingPoint(), true) );  			//  Pawn перемещается поближе к врагу
+			MoveTo( GetNextDestinationPoint( GetDefendingPoint(), true) );  			//  Pawn перемещается поближе к врагу
 			
-			while ( bDestinationIsReached != true )										// Если путь состоит из нескольких узлов, 
+			while ( bDestinationIsReachable != true )										// Если путь состоит из нескольких узлов, 
 			{	`log("3");     			
-				MoveTo( GetNextDestinationPoint(Pawn.Location,Enemy.Location, false), Enemy );	// то снова перемещение в следующей позиции,			
+				MoveTo( GetNextDestinationPoint(), Enemy );	// то снова перемещение в следующей позиции,			
 			}
-			`log("4"@Enemy.Location);     
+			`log("4");     
 			if ( Trace (  HitLocation,  HitNormal, Enemy.Location, Pawn.Location,true ) == Enemy )
 				MoveTo( Enemy.Location + Normal(Pawn.Location - Enemy.Location) * DefendingDistance, Enemy);
 			else 
@@ -1530,9 +1621,11 @@ State Defending
 		}
         else
 		{	`log("5");     		
-			MoveTo( Enemy.Location + Normal(Pawn.Location - Enemy.Location) * DefendingDistance, Enemy);	// просто смотреть в его сторону			
-			Pawn.StartFire(0);                                              // выстрелить
+			//MoveTo( Enemy.Location + Normal(Pawn.Location - Enemy.Location) * DefendingDistance, Enemy);	// просто смотреть в его сторону			
+			MoveTo(Pawn.Location, Enemy);	// просто смотреть в его сторону			
+			Pawn.StartFire(0);                                             // выстрелить			
 			Pawn.StopFire(0);
+			Sleep( FRand() * 3 );
         
 			goto('End');
 		}
@@ -1555,26 +1648,6 @@ Middle:
 // ОПИСАНИЕ ПОВЕДЕНИЯ В СОСТОЯНИИ БЕГСТВА
 State Escaping
 {
-    function CheckValues() // проверка сигналов
-    {
-        if ( Enemy == none )
-        {
-            `log("I am ready for expecting!");
-            bEnemyIsDown = 1;
-            
-        }
-        
-        if (Pawn.Health >  (Pawn.default.Health / 4) )
-        {
-            `log("I am ready for defending!");
-            bHFl = 0; bHFh = 1;
-        }
-        
-        SolveBehaviour();
-        
-        
-    }
-    
     function ResetValues() // обнуление сигналов и значений
     {
         bHFl = 1; bHFh = 0;
@@ -1599,7 +1672,8 @@ State Escaping
     
     event EnemyNotVisible()
     {
-        Enemy = none;
+        //Enemy = none;
+		//StopLatentExecution();
     }
     
     function EndState (Name NextStateName) // Инициализация состояния
@@ -1613,13 +1687,13 @@ State Escaping
     HoldingDistance:
    if (Enemy != none)
     {   `log("1");     
-        if ( VSize ( Pawn.Location - Enemy.Location ) - 50 < EscapingDistance)  					// если враг слишком близко
+        if ( VSize ( Pawn.Location - Enemy.Location ) < EscapingDistance - 50)  					// если враг слишком близко
         {	`log("2");     				
-			MoveTo( GetNextDestinationPoint(Pawn.Location, GetEscapingPoint(), true) );  			//  Pawn перемещается поближе к врагу
+			MoveTo( GetNextDestinationPoint( GetEscapingPoint(), true ) );  			//  Pawn перемещается поближе к врагу
 			
-			while ( bDestinationIsReached != true )										// Если путь состоит из нескольких узлов, 
+			while ( bDestinationIsReachable != true )										// Если путь состоит из нескольких узлов, 
 			{	`log("3");     			
-				MoveTo( GetNextDestinationPoint(Pawn.Location,Enemy.Location, false), Enemy );	// то снова перемещение в следующей позиции,			
+				MoveTo( GetNextDestinationPoint( Enemy.Location ), Enemy );	// то снова перемещение в следующей позиции,			
 			}
 			`log("4"@Enemy.Location);     
 			if ( Trace (  HitLocation,  HitNormal, Enemy.Location, Pawn.Location,true ) == Enemy )
@@ -1631,6 +1705,7 @@ State Escaping
 		}
         else
 		{	`log("5");     		
+			sleep (1.0);
 			/* MoveToward(Enemy , Enemy, DefendingDistance);                                       // просто смотреть в его сторону			
 			Pawn.StartFire(0);                                              // выстрелить
 			Pawn.StopFire(0); */
@@ -1655,13 +1730,15 @@ Middle:
 
 defaultproperties
 {
-    bDestinationIsReached = false;
+    bDestinationIsReachable = false;
     
-    // Warning starting values
-    
+	EnemyIsFoundedCriticalTimeIntervalForWarning = 0.1
+	
+	EnemyIsFoundedCriticalTimeInterval = 0.5
+	
     SilentEnvironmentCriticalTimeInterval = 5.0
 	
-	ShootsAbsenceCriticalIntreval = 5.0
+	ShootsAbsenceCriticalIntreval = 10.0
     
     FiringDistance = 500.0
     
