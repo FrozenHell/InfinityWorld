@@ -10,4 +10,5 @@ defaultproperties
 {
 	CrossHairCoordinates=(U=192,V=256,UL=64,VL=64)
 	InventoryGroup=350
+	ThrowImpulse=10.0
 }

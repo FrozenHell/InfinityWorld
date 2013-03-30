@@ -192,12 +192,14 @@ private function cell DrawCell(int celll, const out vector posit, int wzPos, int
 	yachejka.West = drawHPart(Is2Bit(celll, 0), 2, posit);
 
 	if (!st) // пол с потолком
+	{
 		yachejka.Pol = Spawn(class'City.testfloor', MyPawn,, posit, angle);
+	}
 	else
 	{
 		if ((wzPos == 1) && st) // пол первого этажа лестницы
 		{
-			yachejka.Roof = Spawn(class'City.teststairfloor', MyPawn,, posit, angle);
+			yachejka.Pol = Spawn(class'City.teststairfloor', MyPawn,, posit, angle);
 		}
 		else // лестница
 		{
@@ -405,7 +407,7 @@ private function actor drawHOutPart(int partType, int ang, const out vector posi
 			mypExem = Spawn(class'City.testwallex', MyPawn,, posit, qwatrot(ang));
 			break;
 		case 2:
-			mypExem = Spawn(class'City.testdoorexcapped', MyPawn,, posit, qwatrot(ang));
+			mypExem = Spawn(class'City.testdoorex', MyPawn,, posit, qwatrot(ang));
 			break;
 		case 3:
 			mypExem = Spawn(class'City.testspaceex', MyPawn,, posit, qwatrot(ang));

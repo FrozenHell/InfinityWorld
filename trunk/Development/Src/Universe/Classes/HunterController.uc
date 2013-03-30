@@ -40,13 +40,16 @@ Begin:
 	// бежим к высокой точке
 	GoToPoint(vect(0, 0, 10000));
 }
-
-state Wait
+*/
+auto state Wait
 {
 BEGIN:
+	if (SpeakingPawn(Pawn) != None)
+		SpeakingPawn(Pawn).Actions[0].bActive = false;
+	gotoState('Expecting');
 	// дошли до финиша, говорим об этом
-	StopPlayerHunt();
-}*/
+	//StopPlayerHunt();
+}
 
 defaultproperties
 {

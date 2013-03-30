@@ -20,17 +20,17 @@ var SoundCue AttackingSample;
 // нативные функции
 function PlayExpectingSample()
 {
-    PlaySound (ExpectingSample);
+    //PlaySound(ExpectingSample);
 }
 
 function PlayWarningSound()
 {
-    PlaySound (WarningSample);
+    //PlaySound(WarningSample);
 }
 
 function PlayAttackingSound()
 {
-    PlaySound (AttackingSample);
+    //PlaySound(AttackingSample);
 }
 
 // функция вызывается из класса Dialog

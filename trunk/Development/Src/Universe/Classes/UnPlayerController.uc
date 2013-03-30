@@ -123,7 +123,8 @@ exec function drawhouse(optional int seed = 0)
 	{
 		House = Spawn(class'City.TriangleHouse', UnPawn(Owner),, vect(0, -100, 210), rot(0, 0, 0));
 		House.GetPlayerViewPoint = GetPlayerViewPoint;
-		House.Gen(UnPawn(Owner), 4, 4, 8, 0, 2, 14);
+		House.Gen(UnPawn(Owner), 6, 6, 15, 0, 1, 16);
+		//House.Gen(UnPawn(Owner), 4, 4, 3, 0, 1, 16);
 		bHouseGenerated = true;
 	}
 }
@@ -516,7 +517,7 @@ function BotPrayWin()
 // игрок-охотник убил жертву
 function PlayerHunterWin()
 {
-	Say("Player Win");
+	//Say("Player Win");
 	StopHunt();
 	NextRound();
 }
@@ -627,10 +628,8 @@ function CloseIntro(int param)
 	// если такие нашлись, то начинаем диалог
 	if (NearestSpPawn != None)
 	{
-		NearestSpPawn.Use(Pawn);
+		//NearestSpPawn.Use(Pawn);
 	}
-	
-	ConsoleCommand("Loaded");
 }
 
 // проверяем на наличие вблизи объектов, которые можно использовать
