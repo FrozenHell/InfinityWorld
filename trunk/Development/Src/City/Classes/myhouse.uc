@@ -57,6 +57,9 @@ var array<LiftController> Lifts;
 */
 var int Visiblity; // переменна€ показывает видимость
 
+// низкий уровень детализации
+var HouseLOD LOD;
+
 // массив €чеек здани€
 var array<Cell> Cells;
 
@@ -98,16 +101,13 @@ simulated event PostBeginPlay()
 
 event Destroyed()
 {
-	local LiftController localLift;
-	
 	// очищаем навигационную сеть
 	ClearNavNet();
 	// очищаем €чейки здани€
 	Clear();
 	
 	// удал€ем лифты
-	foreach Lifts(localLift)
-		localLift.Destroy();
+	RemoveLifts();
 
 	super.Destroyed();
 }
@@ -282,8 +282,6 @@ function Gen(Pawn locPawn, int locType, optional int len = 10, optional int wid 
 	ACos = Cos(Rotation.Yaw / RadToUnrRot);
 	Initialize();
 	DrawHouse();
-	AddLifts();
-	GenNavNet();
 }
 
 // инициализаци€ здани€ и выделение пам€ти (координаты положени€ актЄра - центр здани€)
@@ -302,8 +300,6 @@ function gen2(Pawn locPawn, int locType, optional int len = 10, optional int wid
 	ACos = Cos(Rotation.Yaw / RadToUnrRot);
 	initialize();
 	DrawHouse();
-	AddLifts();
-	GenNavNet();
 }
 
 // прорисовка дома
@@ -325,12 +321,14 @@ private function DrawHouse(optional bool full = false)
 		GetVisibleMass();
 
 		for (k = 0; k < Height; k++)
+		{
 			for (j = 0; j < Width; j++)
+			{
 				for (i = 0; i < Length; i++)
 				{
 					celll = i + j * Length + k * Length * Width;
 					// если €чейка должна быть видима, а она скрыта
-					if ((full || (MyData2.NavigationData[celll] == 2)) && !Cells[celll].bVisible)
+					if ((full || (MyData2.NavigationData[celll] == 2)) &&  !Cells[celll].bVisible)
 					{
 						pos.x = Location.x + (LenW * i - HouseCenter.x) * aCos - (WidW * j - HouseCenter.y) * ASin;
 						pos.y = Location.y + (LenW * i - HouseCenter.x) * ASin + (WidW * j - HouseCenter.y) * aCos;
@@ -345,11 +343,11 @@ private function DrawHouse(optional bool full = false)
 					else if (!(full || (MyData2.NavigationData[celll] == 2)) && Cells[celll].bVisible) // иначе, если €чейка должна быть скрыта, а она видима
 					{
 						// очищаем содержимое €чейки
-						Cells[celll].North.destroy();
-						Cells[celll].East.destroy();
-						Cells[celll].South.destroy();
-						Cells[celll].West.destroy();
-						Cells[celll].Pol.destroy();
+						if (Cells[celll].North != None) Cells[celll].North.destroy();
+						if (Cells[celll].East != None) Cells[celll].East.destroy();
+						if (Cells[celll].South != None) Cells[celll].South.destroy();
+						if (Cells[celll].West != None) Cells[celll].West.destroy();
+						if (Cells[celll].Pol != None) Cells[celll].Pol.destroy();
 						// следующие элементы характерны не дл€ всех €чеек
 						if (Cells[celll].Lex != None) Cells[celll].Lex.destroy();
 						if (Cells[celll].Wex != None) Cells[celll].Wex.destroy();
@@ -359,6 +357,26 @@ private function DrawHouse(optional bool full = false)
 						Cells[celll].bVisible = false;
 					}
 				}
+			}
+		}
+
+		if (Visiblity == 0)
+		{
+			if (Lifts.Length != 0)
+				RemoveLifts();
+
+			if (NavList.Length != 0)
+				ClearNavNet();
+
+		}
+		else
+		{
+			if (Lifts.Length == 0)
+				AddLifts();
+
+			if (NavList.Length == 0)
+				GenNavNet();
+		}
 	}
 }
 
@@ -401,6 +419,7 @@ private function actor drawHOutPart(int partType, int ang, const out vector posi
 	switch (partType)
 	{
 		case 0:
+			// внутренние и внешние окна объединены
 			mypExem = None;//Spawn(class'City.testwindowex', MyPawn,, posit, qwatrot(ang));
 			break;
 		case 1:
@@ -433,7 +452,7 @@ function bool SetVisibility(vector nav)
 	// если дом не далеко
 	if (Vsize(nav) < DistFar)
 	{
-		// если мы с запада здани€ “”“ Ќјƒќ ”„≈—“№ ¬ќ«ћќ∆Ќќ—“№ ѕќ¬ќ–ќ“ј «ƒјЌ»я!!!
+		// если мы с запада здани€
 		if (nav.x < -0.5 * Length * LenW)
 			vis += 2; // +00000010
 		// если мы с востока здани€
@@ -485,6 +504,7 @@ function bool SetVisibility(vector nav)
 function GetVisibleMass()
 {
 	local int i, j, k;
+
 	if (Visiblity != 0)
 	{
 		for (k = 0; k < Height; k++)
@@ -494,11 +514,16 @@ function GetVisibleMass()
 				for (i = 0; i < Length; i++)
 				{
 					if ((isBitB(Visiblity, 1) && (i == 0))||(isBitB(Visiblity, 2) && (i == Length - 1)) || (isBitB(Visiblity, 3) && (j == Width - 1)) || (isBitB(Visiblity, 4) && (j == 0)) || (isBitB(Visiblity, 5) && (k == Height - 1)) || (isBitB(Visiblity, 6) && (abs(k - Currentfloor) < 3)))
-						MyData2.NavigationData[i+j*Length+k*Length*Width] = 2;
+						MyData2.NavigationData[i + j*Length + k*Length*Width] = 2;
 					else
-						MyData2.NavigationData[i+j*Length+k*Length*Width] = 0;
+						MyData2.NavigationData[i + j*Length + k*Length*Width] = 0;
 				}
 			}
+		}
+		
+		if (LOD != none)
+		{
+			Lod.Destroy();
 		}
 	}
 	else
@@ -507,20 +532,30 @@ function GetVisibleMass()
 		{
 			MyData2.NavigationData[i] = 0;
 		}
+		
+		if (LOD == none)
+		{
+			LOD = Spawn(class'City.HouseLOD', MyPawn,, Location, Rotation);
+			LOD.SetScale(Length, Width, Height);
+		}
+		else
+		{
+			`warn("лишн€€ попытка выгрузки здани€");
+		}
 	}
 }
 
 function Pawn FindNearlyPawn()
 {
 	local Pawn locPawn, nearlyPawn;
-	local float Dist;
-	Dist = 100000;
+	local float locDist;
+	locDist = 100000;
 	foreach AllActors(class'Pawn', locPawn)
 	{
-		if (Vsize(FindNearlyPawn().Location - Location) < Dist)
+		if (Vsize(FindNearlyPawn().Location - Location) < locDist)
 		{
 			nearlyPawn = locPawn;
-			Dist = Vsize(FindNearlyPawn().Location - Location);
+			locDist = Vsize(FindNearlyPawn().Location - Location);
 		}
 	}
 	return nearlyPawn;
@@ -529,14 +564,14 @@ function Pawn FindNearlyPawn()
 function bool IsnearPawn()
 {
 	local Pawn locPawn, nearlyPawn;
-	local float Dist;
-	Dist = 100000;
+	local float locDist;
+	locDist = 100000;
 	foreach AllActors(class'Pawn', locPawn)
 	{
-		if (Vsize(locPawn.Location - Location) < Dist)
+		if (Vsize(locPawn.Location - Location) < locDist)
 		{
 			nearlyPawn = locPawn;
-			Dist = Vsize(locPawn.Location - Location);
+			locDist = Vsize(locPawn.Location - Location);
 		}
 	}
 	if (nearlyPawn != None)
@@ -559,6 +594,15 @@ function AddLifts()
 		Lifts[i].Create(MyPawn, Height, HeiW);
 	}
 }
+
+function RemoveLifts()
+{
+	local LiftController localLift;
+
+	foreach Lifts(localLift)
+		localLift.Destroy();
+}
+
 
 /*
  * “ак как навигационные маршруты тесно св€заны с €чейками здани€, то стоило бы
@@ -743,4 +787,5 @@ defaultproperties
 	DistNear = 5000
 	DistFar = 20000
 	BuildingType = 0
+	Visiblity = 1
 }

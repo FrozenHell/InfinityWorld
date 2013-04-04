@@ -28,6 +28,8 @@ var bool bTestHouseCreated;
 var Actor TestHouse;
 var int TestHouseSeed;
 var float TestHouseAngle;
+var int housesCount; // количество домов для genmorehouses
+var int hCountX, hCountY; // ширина и высота города для genmorehouses
 // для режима охотник-жертва
 var GFxMovie_HunterHUD GFxHunterHUD;
 var Pawn Pray;
@@ -36,6 +38,7 @@ var bool bHunt;
 // вступительный ролик
 var GFxMovie_Intro StartMovie;
 
+// нажата ли кнопка "Использовать"
 var bool bUsePressed;
 
 exec function rotator UnrRot(float pitch, float yaw, float roll)
@@ -131,16 +134,17 @@ exec function drawhouse(optional int seed = 0)
 
 exec function genmorehouses()
 {
-	local int i, j;
 	local MyHouse how;
-	for (i = 0; i < 4; i++)
+
+	how = Spawn(class'City.myhouse', UnPawn(Owner),, vec((housesCount%hCountX) * 5000 - 50000, (housesCount/hCountX) * 5000 - 50000, -40), rot(0, 0, 0));
+	how.GetPlayerViewPoint = GetPlayerViewPoint;
+	how.gen2(UnPawn(Owner), 0, 5, 5, Round(RandRange(3, 10)), housesCount);
+
+	housesCount++;
+	if (housesCount < hCountX * hCountY)
 	{
-		for (j = 0; j < 4; j++)
-		{
-			how = Spawn(class'City.myhouse', UnPawn(Owner),, vec(i * 5000, j * 5000, 210), rot(0, 0, 0));
-			how.GetPlayerViewPoint = GetPlayerViewPoint;
-			how.gen2(UnPawn(Owner), 0, 5, 5, 10, i + j);
-		}
+		SetTimer(0.05, false, 'genmorehouses');
+		`log(housesCount);
 	}
 }
 
@@ -712,4 +716,8 @@ defaultproperties
 	HUDUsableActor = None
 	bGamePaused = false
 	bUsePressed = false
+	
+	hCountX = 15
+	hCountY = 15
+	housesCount = 0
 }
