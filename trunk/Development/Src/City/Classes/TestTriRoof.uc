@@ -2,7 +2,7 @@
  *	TestTriRoof
  *
  *	Creation date: 09.03.2013 16:17
- *	Copyright 2013, Alekseu
+ *	Copyright 2013, FHS
  */
 class TestTriRoof extends HousePart;
 

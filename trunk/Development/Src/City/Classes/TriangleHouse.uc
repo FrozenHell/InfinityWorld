@@ -129,7 +129,7 @@ function DrawCenter(float posX, float posY, float floor, float angle, Myhouse bl
 
 	local array<NavNode> localNodes;
 	local NavNode localNode1, localNode2, localNode3;
-	
+
 	// убираем варнинги компилятора
 	localNode3= None;
 	localNodes[0] = None;
@@ -157,7 +157,7 @@ function DrawCenter(float posX, float posY, float floor, float angle, Myhouse bl
 			localNode1 = Spawn(class'Base.NavNode', MyPawn,, locPos, rot(0, 0, 0));
 			NavList.AddItem(localNode1);
 
-			
+
 			// создаём связи
 			if (j == Width - i)
 			{
@@ -169,7 +169,7 @@ function DrawCenter(float posX, float posY, float floor, float angle, Myhouse bl
 			{
 				BindNodes(localNode1, localNode3);
 			}
-			
+
 			if (j == Width - 1)
 			{
 				if (unormalBranch != 3)
@@ -181,7 +181,7 @@ function DrawCenter(float posX, float posY, float floor, float angle, Myhouse bl
 				else
 				{
 					addr = 0 + (block1.Width - i) * block3.Length + floor * block3.Length * block3.Width;
-					if (is2bit(block3.MyData.NavigationData[4 + addr], 1) != 1)
+					if (is2bit(block3.MyData.NavigationData[4 + addr], 3) != 1)
 						BindNodes(localNode1, block3.Cells[addr].NodeSouth);
 				}
 			}
@@ -190,8 +190,8 @@ function DrawCenter(float posX, float posY, float floor, float angle, Myhouse bl
 				localNode3 = localNodes[j - Width + i];
 				BindNodes(localNode1, localNode3);
 			}
-			
-			
+
+
 			// если это не крайний ряд, то добавляем дополнительный блок
 			if (i < Width)
 			{
@@ -213,11 +213,13 @@ function DrawCenter(float posX, float posY, float floor, float angle, Myhouse bl
 				BindNodes(localNode1, localNode2);
 			}
 			else // если это крайний ряд, то связываем с соседним домом
-			{	
+			{
 				// добавляем связи с соседним зданием
 				addr = block2.Length - 1 + (block2.Width - j - 1) * block2.Length + floor * block2.Length * block2.Width;
 				if (is2bit(block2.MyData.NavigationData[4 + addr], 1) != 1)
-					BindNodes(localNode1, block2.Cells[addr].NodeNorth);
+					{
+						BindNodes(localNode1, block2.Cells[addr].NodeNorth);
+					}
 			}
 		}
 }
@@ -225,8 +227,18 @@ function DrawCenter(float posX, float posY, float floor, float angle, Myhouse bl
 // связать два узла двусторонней связью
 static function BindNodes(NavNode A, NavNode B)
 {
-	A.AddRelation(B);
-	B.AddRelation(A);
+	if (A != None && B != None)
+	{
+		A.AddRelation(B);
+		B.AddRelation(A);
+	}
+	else
+	{
+		if (A == None)
+			`warn("попытка связать с несуществующей нодой A");
+		else
+			`warn("попытка связать с несуществующей нодой B");
+	}
 }
 
 function DrawTriHousePart(float posX, float posY, float angle, int type, int next, int deep = 0, optional MyHouse prevBranch) // если есть косяки, уберите optional и откомпилируйте
@@ -238,6 +250,8 @@ function DrawTriHousePart(float posX, float posY, float angle, int type, int nex
 
 	if (type == 0)
 	{
+		unormalBranch = -1;
+		
 		if ((next <= 1) && (deep < 5))
 		{
 			block1 = DrawBloxx(posX - ((sqrt(3.0)/6.0) * (Width * WidW) + (Length / 2 * WidW)) * cos(angle+4.0/3*PI), posY - ((sqrt(3.0)/6.0) * (Width * WidW) + (Length/2 * WidW)) * sin(angle+4.0/3*PI), angle+4.0/3*PI, SeedIterator++, 1);
@@ -246,7 +260,7 @@ function DrawTriHousePart(float posX, float posY, float angle, int type, int nex
 		{
 			block1 = DrawBloxx(posX - ((sqrt(3.0)/6.0) * (Width * WidW) + (Length * WidW  + WallWidth/2)) * cos(angle+4.0/3*PI), posY - ((sqrt(3.0)/6.0) * (Width * WidW) + (Length * WidW + WallWidth/2)) * sin(angle+4.0/3*PI), angle+4.0/3*PI, SeedIterator++, 2);
 		}
-		
+
 		if ((next > 1) && (deep < 5))
 		{
 			DrawTriHousePart(posX - ((sqrt(3.0)/6.0) * (Width * WidW) + (Length * WidW + WallWidth/2)) * 2 * cos(angle+4.0/3*PI), posY - ((sqrt(3.0)/6.0) * (Width * WidW) + (Length * WidW + WallWidth/2)) * 2 * sin(angle+4.0/3*PI), PI + angle+2.0/3*PI,type , next - 1, deep + 1, block1);
@@ -259,7 +273,6 @@ function DrawTriHousePart(float posX, float posY, float angle, int type, int nex
 			if (next < 6)
 			{
 				block3 = DrawBloxx(posX - ((sqrt(3.0)/6.0) * (Width * WidW) + (Length * WidW/2 + WallWidth/2)) * cos(angle+2.0/3*PI), posY - ((sqrt(3.0)/6.0) * (Width * WidW) + (Length * WidW/2 + WallWidth/2)) * sin(angle+2.0/3*PI), angle+2.0/3 * PI, SeedIterator++, 1);
-				unormalBranch = -1;
 			}
 			else
 			{
