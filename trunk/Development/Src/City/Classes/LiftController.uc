@@ -41,6 +41,9 @@ var array<LiftDoor> Doors;
 // кнопки вызова лифта на каждом этаже
 var array<LiftButton> Buttons;
 
+// находимся ли мы в движении
+var bool bMoving;
+
 //-----------------------
 
 // создаём шахту лифта
@@ -78,15 +81,21 @@ function Create(Actor locPawn, int lHeight, int lBlHeight)
 // кто-то вызвал лифт
 function CallLift(int newFloor)
 {
-	GoToState('Moving');
+	StartMoving();
 }
 
 // выбран этаж для поездки на панели лифта
 function ControlPanelAddFloor(int newFloor)
 {
-	nextFloor = newFloor;
 	Buttons[newFloor].SetState(1);
-	GoToState('Moving');
+	StartMoving();
+}
+
+// стартуем лифт, если необходимо
+function StartMoving()
+{
+	if (IsInState('Waiting'))
+		GoToState('Moving');
 }
 
 // устанавливаем следующий этаж для путешествия direct - направление (0, если не важно)
@@ -234,36 +243,38 @@ BEGIN:
 // лифт в движении
 state Moving
 {
-	// сделать шаг
-	function MoveToFloor()
+	simulated event Tick(float deltatime)
 	{
-		Room.MoveSmooth(vect(0.0, 0.0, 1.0) * currentDirection);
-		Panel.MoveSmooth(vect(0.0, 0.0, 1.0) * currentDirection);
-		//`log("Движусь к этажу"@nextFloor);
+		if (bMoving)
+		{
+			Room.MoveSmooth(vect(0.0, 0.0, 100.0) * currentDirection * deltatime);
+			Panel.MoveSmooth(vect(0.0, 0.0, 100.0) * currentDirection * deltatime);
+			if (bCheckCome())
+			{
+				// приехали
+				bMoving = false;
+				Room.MoveSmooth(vect(0.0, 0.0, 1.0) * ((Location.z + BlockHeight * nextFloor) - Room.Location.z));
+				Panel.SetLocation(Room.Location + vector(rotator(LiftPanelOffset) + Rotation) * VSize(LiftPanelOffset));
+				Buttons[nextFloor].SetState(0);
+				currentFloor = nextFloor;
+				GoToState('OpenAndWait');
+			}
+		}
 	}
 
 	// приехали ли мы
 	function bool bCheckCome()
 	{
-		return Room.Location.z == Location.z + BlockHeight * nextFloor;
+		if (currentDirection == 1)
+			return Room.Location.z >= Location.z + BlockHeight * nextFloor;
+		else
+			return Room.Location.z <= Location.z + BlockHeight * nextFloor;
 	}
 
 BEGIN:
 	GetNextFloor(currentDirection);
 GO:
-	MoveToFloor();
-	Sleep(0.01);
-	if (!bCheckCome())
-	{
-		//`log("едем дальше");
-		GoTo('BEGIN');
-	}
-	else
-	{
-		Buttons[nextFloor].SetState(0);
-		currentFloor = nextFloor;
-		GoToState('OpenAndWait');
-	}
+	bMoving = true;
 }
 
 defaultproperties

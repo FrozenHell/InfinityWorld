@@ -60,6 +60,9 @@ var int Visiblity; // переменная показывает видимость
 // низкий уровень детализации
 var HouseLOD LOD;
 
+// сдвиг LOD'а
+const LOD_SHIFT = vect(0.0, 0.0, -25.0);
+
 // массив ячеек здания
 var array<Cell> Cells;
 
@@ -535,7 +538,7 @@ function GetVisibleMass()
 		
 		if (LOD == none)
 		{
-			LOD = Spawn(class'City.HouseLOD', MyPawn,, Location, Rotation);
+			LOD = Spawn(class'City.HouseLOD', MyPawn,, Location+LOD_SHIFT, Rotation);
 			LOD.SetScale(Length, Width, Height);
 		}
 		else
