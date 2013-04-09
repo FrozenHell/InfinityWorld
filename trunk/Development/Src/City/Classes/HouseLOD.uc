@@ -29,16 +29,17 @@ simulated function PostBeginPlay()
 function SetScale(float scX, float scY, float scZ)
 {
 	local vector locScale;
-	MatIC_Front.SetScalarParameterValue('TileU', scY);
-	MatIC_Front.SetScalarParameterValue('TileV', scZ);
-	MatIC_Side.SetScalarParameterValue('TileU', scX);
-	MatIC_Side.SetScalarParameterValue('TileV', scZ);
-	MatIC_Top.SetScalarParameterValue('TileU', scX);
-	MatIC_Top.SetScalarParameterValue('TileV', scY);
+	locScale.X = scX + 0.05;
+	locScale.Y = scY + 0.05;
+	locScale.Z = scZ + 0.1;
 
-	locScale.X = scX;
-	locScale.Y = scY;
-	locScale.Z = scZ + 1.0;
+	MatIC_Front.SetScalarParameterValue('TileU', locScale.Y);
+	MatIC_Front.SetScalarParameterValue('TileV', locScale.Z);
+	MatIC_Side.SetScalarParameterValue('TileU', locScale.X);
+	MatIC_Side.SetScalarParameterValue('TileV', locScale.Z);
+	MatIC_Top.SetScalarParameterValue('TileU', locScale.X);
+	MatIC_Top.SetScalarParameterValue('TileV', locScale.Y);
+
 	SetDrawScale3D(locScale);
 }
 
