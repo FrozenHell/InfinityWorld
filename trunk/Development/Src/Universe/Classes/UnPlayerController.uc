@@ -40,6 +40,8 @@ var GFxMovie_Intro StartMovie;
 
 // нажата ли кнопка "Использовать"
 var bool bUsePressed;
+// актёр, который предполагается использовать
+var Actor ActorForUse;
 
 exec function rotator UnrRot(float pitch, float yaw, float roll)
 {
@@ -426,10 +428,26 @@ exec function BtnSeedSub()
 // нажали клавишу "Использовать"
 exec function UseActor_pressed()
 {
-	bUsePressed = true;
-	
-	// пока не истечёт таймер, его повторные запуски будут игнорироваться
-	SetTimer(1, false, 'ShowAdditionalActions');
+	local Actor hitActor;
+	local vector hitNormal, hitLocation;
+	local vector viewLocation;
+	local rotator viewRotation;
+
+	GetPlayerViewPoint(viewLocation, viewRotation);
+	HitActor = Trace(hitLocation, hitNormal, viewLocation + MaxUseRange * vector(viewRotation), viewLocation, true);
+
+	// если мы нажали на актёра, который можно использовать
+	if (Useable(HitActor) != None && Useable(HitActor).bGetUsable())
+	{
+		// указываем, какого актёра на мужно будет использовать
+		ActorForUse = HitActor;
+		
+		// указываем, что актёр ещё не обработан
+		bUsePressed = true;
+		
+		// пока не истечёт таймер, его повторные запуски будут игнорироваться
+		SetTimer(1, false, 'ShowAdditionalActions');
+	}
 }
 
 // прошло время после нажатия "Использовать"
@@ -447,23 +465,23 @@ function ShowAdditionalActions()
 		GetPlayerViewPoint(viewLocation, viewRotation);
 		HitActor = Trace(hitLocation, hitNormal, viewLocation + MaxUseRange * vector(viewRotation), viewLocation, true);
 
-		// если мы нажали на актёра, который можно использовать
-		if (Useable(HitActor) != None && Useable(HitActor).bGetUsable())
+		// если мы наведены на актёра, который можно использовать, и это тот актёр, который нам надо обработать
+		if (Useable(HitActor) != None && HitActor == ActorForUse && Useable(HitActor).bGetUsable())
 		{
-			
+			`log("длительное нажатие на объект");
 		}
 	}
 }
 
 // отпустили клавишу "Использовать"
-exec function UseActor_released()
+exec function UseActor_released(optional int idxAction = 0)
 {
 	local Actor hitActor;
 	local vector hitNormal, hitLocation;
 	local vector viewLocation;
 	local rotator viewRotation;
 	
-	// если действие не пошло в обработку длинного нажатия
+	// если нам ещё нужно обработать актёра
 	if (bUsePressed)
 	{
 		bUsePressed = false;
@@ -471,18 +489,16 @@ exec function UseActor_released()
 		GetPlayerViewPoint(viewLocation, viewRotation);
 		HitActor = Trace(hitLocation, hitNormal, viewLocation + MaxUseRange * vector(viewRotation), viewLocation, true);
 
-		// если мы нажали на актёра, который можно использовать
-		if (Useable(HitActor) != None && Useable(HitActor).bGetUsable())
+		// если мы наведены на актёра, который можно использовать, и это тот актёр, который нам надо обработать
+		if (Useable(HitActor) != None && HitActor == ActorForUse && Useable(HitActor).bGetUsable(idxAction))
 		{
-			// использовать
-			Useable(HitActor).Use(Pawn);
+			// используем
+			Useable(HitActor).Use(Pawn, idxAction);
 
-			GFxHUD.AddIcon(Useable(HitActor).GetActionName());
+			CheckUsableActors();
 		}
 	}
 }
-
-
 
 // начинаем охоту
 exec function StartHunt()
@@ -643,6 +659,7 @@ function CheckUsableActors()
 	local vector hitNormal, hitLocation;
 	local vector viewLocation;
 	local rotator viewRotation;
+	local int i;
 
 	GetPlayerViewPoint(viewLocation, viewRotation);
 	HitActor = Trace(hitLocation, hitNormal, viewLocation + MaxUseRange * vector(viewRotation), viewLocation, true);
@@ -663,7 +680,10 @@ function CheckUsableActors()
 				TouchScreen(HUDUsableActor).UnFocus();
 
 			HUDUsableActor = HitActor;
-			GFxHUD.AddIcon(Useable(HitActor).GetActionName());
+			// выводим на HUD все действия
+			for (i = 0; i < Useable(HitActor).GetActionsCount(); i++)
+				if (Useable(HitActor).bGetUsable(i))
+					GFxHUD.AddAction(Useable(HitActor).GetActionName(i));
 		}
 	}
 	else
@@ -675,7 +695,7 @@ function CheckUsableActors()
 				TouchScreen(HUDUsableActor).UnFocus();
 
 			HUDUsableActor = None;
-			GFxHUD.RemoveIcon();
+			GFxHUD.RemoveActions();
 		}
 	}
 }

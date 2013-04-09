@@ -21,7 +21,7 @@ function initialize()
 	Start(true);
 }
 
-function AddIcon(String ActionName)
+function AddAction(String ActionName)
 {
 	local ASValue arg;
 	local array<ASValue> args;
@@ -30,12 +30,12 @@ function AddIcon(String ActionName)
 	arg.s = ActionName;
 	args.AddItem(arg);
 	
-	Invoke("_root.AddIcon", args);
+	Invoke("_root.AddAction", args);
 }
 
-function RemoveIcon()
+function RemoveActions()
 {
-	ActionScriptVoid("_root.RemoveIcon");
+	ActionScriptVoid("_root.RemoveActions");
 }
 
 defaultproperties
