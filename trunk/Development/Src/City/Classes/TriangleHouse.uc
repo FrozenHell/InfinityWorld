@@ -63,7 +63,6 @@ function Gen(Pawn locPawn, int len, int wid, int hei, int type, int size, int se
 	Length = len;
 	Width = wid;
 	Height = hei;
-	WallWidth = 0.0;
 
 	GenSeed = seed;
 	HouseType = type;
@@ -90,66 +89,56 @@ function MyHouse DrawBloxx(float posX, float posY, float angle, int seedMod, int
 	return localBlock;
 }
 
-function SpawnTriangleCenterPart(float posX, float posY, float posZ, float angle)
-{
-	local vector locPos;
-	local rotator locRot;
-	local TestTriFloor localPart;
-	local TestTriRoof localPart2;
-
-	locPos.x = posX;
-	locPos.y = posY;
-	locPos.z = posZ;
-	locPos += Location;
-	locRot.Yaw = Rotation.Yaw + (angle - DegToRad * 90) * RadToUnrRot;
-
-	localPart = Spawn(class'City.testtrifloor', MyPawn,, locPos, locRot);
-	TriParts.AddItem(localPart);
-
-	// если это последний этаж
-	if (posZ == (Height - 1) * HeiW)
-	{	// ставим крышу
-		localPart2 = Spawn(class'City.testtriroof', MyPawn,, locPos, locRot);
-		RoofParts.AddItem(localPart2);
-	}
-}
-
 function DrawCenter(float posX, float posY, float floor, float angle, Myhouse block1, Myhouse block2, Myhouse block3, int unormalBranch)
 {
 	local float wi;
-	local float le;
 	local float xp;
 	local float yp;
-	local float newx;
-	local float newy;
 	local int i, j;
 	local vector locPos;
 	local int addr;
 	local float posZ;
+	local TestTriFloor localPart;
+	local TestTriRoof localPart2;
+	local rotator locRot;
 
 	local array<NavNode> localNodes;
 	local NavNode localNode1, localNode2, localNode3;
 
 	// убираем варнинги компилятора
-	localNode3= None;
+	localNode3 = None;
 	localNodes[0] = None;
 
 	posZ = floor * HeiW;
 
+	// ставим центральную часть для этажа
+	locPos.x = posX;
+	locPos.y = posY;
+	locPos.z = posZ;
+	locPos += Location;
+	locRot.Yaw = Rotation.Yaw + (angle - DegToRad * 90) * RadToUnrRot;
+	localPart = Spawn(class'City.TestTriFloor', MyPawn,, locPos, locRot);
+	localPart.SetScale(Width, Width, 1.0);
+	TriParts.AddItem(localPart);
+
+	// если это последний этаж, ставим крышу
+	if (floor == Height - 1)
+	{
+		localPart2 = Spawn(class'City.TestTriRoof', MyPawn,, locPos, locRot);
+		localPart2.SetScale(Width, Width, 1.0);
+		RoofParts.AddItem(localPart2);
+	}
+
+	// расставляем путевые узлы
 	for (i = 1; i <= Width; i++)
 		for (j = Width - i; j < Width; j++)
 		{
 			wi = (Width - i) * WidW * 2 - (Width - 1) * WidW + i * WidW/2 - WidW / 2;
-			le = (Width - 1 - j) * WidW - i * WidW / 2 + WidW / 2;
 			xp = (sqrt(3.0) / 3.0) * wi;
-			yp = le;
-			newx = xp * cos(angle) - yp * sin(angle);
-			newy = yp * cos(angle) + xp * sin(angle);
+			yp = (Width - 1 - j) * WidW - i * WidW / 2 + WidW / 2;
 
-			SpawnTriangleCenterPart(posX + newx, posY + newy, posZ, angle);
-
-			locPos.x = posX + newx;
-			locPos.y = posY + newy;
+			locPos.x = posX + xp * cos(angle) - yp * sin(angle);
+			locPos.y = posY + yp * cos(angle) + xp * sin(angle);
 			locPos.z = posZ + 70;
 			locPos += Location;
 
@@ -195,14 +184,9 @@ function DrawCenter(float posX, float posY, float floor, float angle, Myhouse bl
 			// если это не крайний ряд, то добавляем дополнительный блок
 			if (i < Width)
 			{
-				wi -= WidW;
-				xp = (sqrt(3.0) / 3.0) * wi;
-				newx = xp * cos(angle) - yp * sin(angle);
-				newy = yp * cos(angle) + xp * sin(angle);
-				SpawnTriangleCenterPart(posX + newx, posY + newy, posZ, angle + DegToRad * 180);
-
-				locPos.x = posX + newx;
-				locPos.y = posY + newy;
+				xp = (sqrt(3.0) / 3.0) * WidW;
+				locPos.x = posX + xp * cos(angle) - yp * sin(angle);
+				locPos.y = posY + yp * cos(angle) + xp * sin(angle);
 				locPos.z = posZ + 70;
 				locPos += Location;
 
@@ -421,6 +405,7 @@ defaultproperties
 	LenW = 600
 	WidW = 600
 	HeiW = 250
+	WallWidth = 0
 
-	SeedIterator = 0;
+	SeedIterator = 0
 }

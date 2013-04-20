@@ -1,10 +1,10 @@
 /**
- *	TestTriRoof
+ *	LODTriHouse
  *
- *	Creation date: 09.03.2013 16:17
+ *	Creation date: 02.04.2013 21:17
  *	Copyright 2013, FHS
  */
-class TestTriRoof extends ArchitecturalMesh;
+class LODTriHouse extends ArchitecturalMesh;
 
 var() const editconst StaticMeshComponent StaticMeshComponent;
 
@@ -33,14 +33,17 @@ function SetScale(float scX, float scY, float scZ)
 defaultproperties
 {
 	Begin Object Class=StaticMeshComponent Name=StaticMeshComponent
-		StaticMesh = StaticMesh'Houses.Test1.tricenterroof'
+		bAllowApproximateOcclusion = TRUE
+		bForceDirectLightMap = TRUE
+		bUsePrecomputedShadows = TRUE
 		CollideActors = True
 		BlockActors = True
 		BlockRigidBody = True
+		StaticMesh = StaticMesh'Houses.Test1.tricenterroof'
 	End Object
 	CollisionComponent = StaticMeshComponent
 	StaticMeshComponent = StaticMeshComponent
 	Components.Add(StaticMeshComponent)
 
-	MatInst_Parent = MaterialInstanceConstant'Houses.Test1.TriCenterMaterial_INST'
+	MatInst_Parent = MaterialInstanceConstant'Houses.LODs.LODTopMaterial_INST'
 }

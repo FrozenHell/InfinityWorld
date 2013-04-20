@@ -1,4 +1,4 @@
-class TestFloor extends housepart;
+class TestFloor extends ArchitecturalMesh;
 
 defaultProperties
 {

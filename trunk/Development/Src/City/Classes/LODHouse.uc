@@ -1,17 +1,15 @@
 /**
- *	HouseLOD
+ *	LODHouse
  *
  *	Creation date: 02.04.2013 21:17
  *	Copyright 2013, FHS
  */
-class HouseLOD extends HousePart;
+class LODHouse extends ArchitecturalMesh;
 
 var() const editconst StaticMeshComponent StaticMeshComponent;
 
 var MaterialInstanceConstant MatIC_Front, MatIC_Side, MatIC_Top;
 var MaterialInstanceConstant MatInst_Wall, MatInst_Roof;
-
-var bool bSelected;
 
 simulated function PostBeginPlay()
 {

@@ -4,7 +4,7 @@
  *	Creation date: 03.03.2013 11:51
  *	Copyright 2013, FHS
  */
-class LiftRoom extends HousePart;
+class LiftRoom extends ArchitecturalMesh;
 
 event PostBeginPlay()
 {

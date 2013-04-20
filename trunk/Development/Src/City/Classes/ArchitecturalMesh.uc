@@ -1,4 +1,4 @@
-class HousePart extends Actor;
+class ArchitecturalMesh extends Actor;
 
 defaultProperties
 {

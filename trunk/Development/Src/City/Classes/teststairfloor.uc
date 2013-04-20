@@ -1,12 +1,12 @@
-class TestStairFloor extends housepart;
+class TestStairFloor extends ArchitecturalMesh;
 
 defaultProperties
 {
-	 Begin Object Class=StaticMeshComponent Name=StaticMeshCompopo
-      StaticMesh=StaticMesh'Houses.Test1.stairfloor'
-			CollideActors = True
-      BlockActors = True
-      BlockRigidBody = True
-   End Object
-   Components.add(StaticMeshCompopo)
+	Begin Object Class=StaticMeshComponent Name=StaticMeshCompopo
+	StaticMesh=StaticMesh'Houses.Test1.stairfloor'
+		CollideActors = True
+		BlockActors = True
+		BlockRigidBody = True
+	End Object
+	Components.add(StaticMeshCompopo)
 }

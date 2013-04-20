@@ -1,14 +1,14 @@
 /**
- *	TestTriRoof
+ *	Trotuar
  *
- *	Creation date: 09.03.2013 16:17
+ *	Creation date: 17.04.2013 05:21
  *	Copyright 2013, FHS
  */
-class TestTriRoof extends ArchitecturalMesh;
+class Trotuar extends ArchitecturalMesh;
 
 var() const editconst StaticMeshComponent StaticMeshComponent;
 
-var MaterialInstanceConstant MatInst_Parent, MatIC;
+var MaterialInstanceConstant MatIC, MatInst_Parent;
 
 simulated function PostBeginPlay()
 {
@@ -17,12 +17,13 @@ simulated function PostBeginPlay()
 	StaticMeshComponent.SetMaterial(0, MatIC);
 }
 
-function SetScale(float scX, float scY, float scZ)
+// scX - ширина, scY - длина
+function SetScale(float scX, float scY)
 {
 	local vector locScale;
 	locScale.X = scX;
 	locScale.Y = scY;
-	locScale.Z = scZ;
+	locScale.Z = 1;
 
 	MatIC.SetScalarParameterValue('TileU', locScale.X);
 	MatIC.SetScalarParameterValue('TileV', locScale.Y);
@@ -33,14 +34,17 @@ function SetScale(float scX, float scY, float scZ)
 defaultproperties
 {
 	Begin Object Class=StaticMeshComponent Name=StaticMeshComponent
-		StaticMesh = StaticMesh'Houses.Test1.tricenterroof'
+		bAllowApproximateOcclusion = TRUE
+		bForceDirectLightMap = TRUE
+		bUsePrecomputedShadows = TRUE
 		CollideActors = True
 		BlockActors = True
 		BlockRigidBody = True
+		StaticMesh = StaticMesh'Street.Road.TrotuarMesh'
 	End Object
 	CollisionComponent = StaticMeshComponent
 	StaticMeshComponent = StaticMeshComponent
 	Components.Add(StaticMeshComponent)
 
-	MatInst_Parent = MaterialInstanceConstant'Houses.Test1.TriCenterMaterial_INST'
+	MatInst_Parent = MaterialInstanceConstant'Houses.LODs.LODTopMaterial_INST'
 }
