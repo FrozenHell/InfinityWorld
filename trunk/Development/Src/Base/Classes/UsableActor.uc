@@ -56,6 +56,51 @@ public function Use(Pawn uInstigator, optional int actionIndex = 0)
 			break;
 		}
 	}
+	
+	switch (actionIndex)
+	{
+		case 1:
+			AdditionalAction1(uInstigator);
+			break;
+		case 2:
+			AdditionalAction2(uInstigator);
+			break;
+		case 3:
+			AdditionalAction3(uInstigator);
+			break;
+		case 4:
+			AdditionalAction4(uInstigator);
+			break;
+		case 0:
+		default:
+			FirstAction(uInstigator);
+			break;
+	}
+}
+
+public function FirstAction(Pawn uInstigator)
+{
+	// первое действие
+}
+
+public function AdditionalAction1(Pawn uInstigator)
+{
+	// первое дополнительное действие
+}
+
+public function AdditionalAction2(Pawn uInstigator)
+{
+	// второе дополнительное действие
+}
+
+public function AdditionalAction3(Pawn uInstigator)
+{
+	// третье дополнительное действие
+}
+
+public function AdditionalAction4(Pawn uInstigator)
+{
+	// четвёртое дополнительное действие
 }
 
 public function bool bGetUsable(optional int actionIndex = 0)

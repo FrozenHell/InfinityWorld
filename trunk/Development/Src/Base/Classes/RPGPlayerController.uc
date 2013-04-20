@@ -21,6 +21,9 @@ var Actor HUDUsableActor;
 var GFxMovie_PauseMenu GFxPauseMenu;
 var bool bGamePaused;
 
+// скорость персонажа
+var float WalkSpeed, RunSpeed;
+
 // --------- методы -----------
 
 // нажали Esc
@@ -160,18 +163,24 @@ function CheckUsableActors()
 		{
 			TouchScreen(HitActor).SetCursorPosition(hitLocation);	
 		}
-		
+
 		// выводим "Нажмите F чтобы ..."
 		if (HUDUsableActor != HitActor)
 		{
+			// если мы переключились с тачскрина, то убираем фокусировку на него
 			if (TouchScreen(HUDUsableActor) != None)
 				TouchScreen(HUDUsableActor).UnFocus();
 
-			HUDUsableActor = HitActor;
+			// если мы переключились с одного объекта на другой, очищаем действия предыдущего объекта
+			if (HUDUsableActor != None)
+				GFxHUD.RemoveActions();
+
 			// выводим на HUD все действия
 			for (i = 0; i < Useable(HitActor).GetActionsCount(); i++)
 				if (Useable(HitActor).bGetUsable(i))
 					GFxHUD.AddAction(Useable(HitActor).GetActionName(i));
+
+			HUDUsableActor = HitActor;
 		}
 	}
 	else
@@ -179,11 +188,14 @@ function CheckUsableActors()
 		// если перед нами ничего нет, то убираем все подсказки с экрана
 		if (HUDUsableActor != None)
 		{
+			// ели до этого мы были наведены на тачскрин, то убираем фокусировку на него
 			if (TouchScreen(HUDUsableActor) != None)
 				TouchScreen(HUDUsableActor).UnFocus();
 
-			HUDUsableActor = None;
+			// удаляем действия с экрана
 			GFxHUD.RemoveActions();
+			
+			HUDUsableActor = None;
 		}
 	}
 }
@@ -200,6 +212,17 @@ simulated event PostBeginPlay()
 	GFxPauseMenu.MenuEvent = PauseMenuEvent;
 }
 
+// при нажатии левого Shift
+exec function LShift_pressed()
+{
+	Pawn.GroundSpeed = WalkSpeed;
+}
+
+// при отжатии левого Shift
+exec function LShift_released()
+{
+	Pawn.GroundSpeed = RunSpeed;
+}
 
 function PlayAnnouncement(class<UTLocalMessage> InMessageClass, int MessageIndex, optional PlayerReplicationInfo PRI, optional Object OptionalObject)
 {
@@ -217,4 +240,7 @@ defaultproperties
 	HUDUsableActor = None
 	bGamePaused = false
 	bUsePressed = false
+	
+	RunSpeed = 440.0
+	WalkSpeed = 200.0
 }

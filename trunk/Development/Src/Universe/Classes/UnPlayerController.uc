@@ -120,6 +120,18 @@ exec function drawtrihouse(optional int type = 0, optional int size = 1)
 	lochouse.Gen(UnPawn(Owner), 4, 4, 15, type, size, 1);
 }
 
+exec function drawroad(optional int posX = 0, optional int posY = 0, optional int len = 1, optional float angle)
+{
+	local RoadPlot localroad;
+	local Trotuar localtrot;
+	localroad = Spawn(class'City.RoadPlot', UnPawn(Owner),, Vec(posX * 600, posY * 600, -40), rot(0, 0, 0));
+	localroad.SetScale(1, len);
+	localtrot = Spawn(class'City.Trotuar', UnPawn(Owner),, Vec(posX * 600 - 900, posY * 600, -40), rot(0, 0, 0));
+	localtrot.SetScale(1, len);
+	localtrot = Spawn(class'City.Trotuar', UnPawn(Owner),, Vec(posX * 600 + 900, posY * 600, -40), rot(0, 0, 0));
+	localtrot.SetScale(1, len);
+}
+
 // тестируем навигационные сети
 exec function getnearnavnode()
 {
@@ -184,16 +196,16 @@ function NavNode SearchNearNavNode()
 exec function gen_ps()
 {
 	local PlanetSystem PS1;
-	PS1 = Spawn(class'City.PlanetSystem', UnPawn(Owner),, vec(50, 30, 300), UnrRot(0, 0, 0));
+	PS1 = Spawn(class'City.PlanetSystem', UnPawn(Owner),, vect(50, 30, 300), UnrRot(0, 0, 0));
 	PS1.generate(UnPawn(Owner), 1);
 }
 
 exec function GenCity()
 {
 	local City miniCity;
-	miniCity = Spawn(class'City.City', UnPawn(Owner),, vec(0, 0, 0), UnrRot(0, 0, -40));
+	miniCity = Spawn(class'City.City', Pawn(Owner),, vect(0, 0, 0), rot(0, 0, 0));
 	miniCity.GetPlayerViewPoint = GetPlayerViewPoint;
-	miniCity.Gen(UnPawn(Owner), 0);
+	miniCity.Gen(Pawn(Owner), 0);
 }
 
 // --- обработчики нажатий на кнопки на тестовом уровне

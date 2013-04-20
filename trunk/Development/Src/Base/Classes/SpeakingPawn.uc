@@ -45,8 +45,31 @@ public function String GetActionName(optional int actionIndex = 0)
 	return Actions[actionIndex].Name;
 }
 
-// заговорить с пауном
 public function Use(Pawn uInstigator, optional int actionIndex = 0)
+{
+	switch (actionIndex)
+	{
+		case 1:
+			AdditionalAction1(uInstigator);
+			break;
+		case 2:
+			AdditionalAction2(uInstigator);
+			break;
+		case 3:
+			AdditionalAction3(uInstigator);
+			break;
+		case 4:
+			AdditionalAction4(uInstigator);
+			break;
+		case 0:
+		default:
+			FirstAction(uInstigator);
+			break;
+	}
+}
+
+// заговорить с пауном
+public function FirstAction(Pawn uInstigator)
 {
 	if (Dialog == None)
 		Dialog = new class'Base.Dialog';
@@ -54,6 +77,26 @@ public function Use(Pawn uInstigator, optional int actionIndex = 0)
 	Dialog.DialogClosed = DialogClosed;
 	Actions[0].bActive = false;
 	//`log(Name@"был потревожен");
+}
+
+public function AdditionalAction1(Pawn uInstigator)
+{
+	// первое дополнительное действие
+}
+
+public function AdditionalAction2(Pawn uInstigator)
+{
+	// второе дополнительное действие
+}
+
+public function AdditionalAction3(Pawn uInstigator)
+{
+	// третье дополнительное действие
+}
+
+public function AdditionalAction4(Pawn uInstigator)
+{
+	// четвёртое дополнительное действие
 }
 
 public function bool bGetUsable(optional int actionIndex = 0)

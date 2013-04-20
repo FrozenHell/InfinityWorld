@@ -21,6 +21,23 @@ public function String GetActionName(optional int actionIndex = 0);
 // функци€ вызываетс€ при нажатии "»спользовать" игроком
 public function Use(Pawn uInstigator, optional int actionIndex = 0);
 
+// ----------------------------------------------------
+// первое действие
+public function FirstAction(Pawn uInstigator);
+
+// первое дополнительное действие
+public function AdditionalAction1(Pawn uInstigator);
+
+// второе дополнительное действие
+public function AdditionalAction2(Pawn uInstigator);
+
+// третье дополнительное действие
+public function AdditionalAction3(Pawn uInstigator);
+
+// четвЄртое дополнительное действие
+public function AdditionalAction4(Pawn uInstigator);
+// ----------------------------------------------------
+
 // доступно ли действие
 public function bool bGetUsable(optional int actionIndex = 0);
 
