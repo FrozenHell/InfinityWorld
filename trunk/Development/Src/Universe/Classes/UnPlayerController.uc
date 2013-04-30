@@ -90,15 +90,15 @@ exec function genmorehouses()
 {
 	local MyHouse how;
 
-	how = Spawn(class'City.myhouse', UnPawn(Owner),, vec((housesCount%hCountX) * 5000 - 50000, (housesCount/hCountX) * 5000 - 50000, -40), rot(0, 0, 0));
+	how = Spawn(class'City.myhouse', UnPawn(Owner),, vec((housesCount%hCountX) * 5000 - 250000, (housesCount/hCountX) * 5000 - 250000, -40), rot(0, 0, 0));
 	how.GetPlayerViewPoint = GetPlayerViewPoint;
-	how.gen2(UnPawn(Owner), 0, 5, 5, Round(RandRange(3, 10)), housesCount);
+	how.gen2(UnPawn(Owner), 0, 5, 5, Round(RandRange(13, 30)), housesCount);
 
 	housesCount++;
 	if (housesCount < hCountX * hCountY)
 	{
-		SetTimer(0.05, false, 'genmorehouses');
-		`log(housesCount);
+		SetTimer(0.005, false, 'genmorehouses');
+		//`log(housesCount);
 	}
 }
 
@@ -552,7 +552,7 @@ defaultproperties
 	bHunt = false
 
 	
-	hCountX = 15
-	hCountY = 15
+	hCountX = 100
+	hCountY = 100
 	housesCount = 0
 }

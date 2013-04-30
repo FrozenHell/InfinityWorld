@@ -44,6 +44,12 @@ var int BuildingType;
 // лифты
 var array<LiftController> Lifts;
 
+// пока false - информаци€ о доме не загружена в пам€ть а существует только LOD
+var bool bInitialized;
+
+// сем€ здани€
+var int HouseSeed;
+
 /*
  * Visiblity
  * 00000000 - здание полностью скрыто(или вместо него подгружен дальний LOD)
@@ -276,14 +282,13 @@ function Gen(Pawn locPawn, int locType, optional int len = 10, optional int wid 
 	Width = wid;
 	Height = hei;
 	BuildingType = locType;
-	GetNavData(MyData, BuildingType, Length, Width, Height, seed);
+	HouseSeed = seed;
 	MyPawn = locPawn;
 	HouseCenter.X = 0; // совсем не центр, скорее реальна€ точка приложени€ дома
 	HouseCenter.Y = 0;
 	Angle.Yaw = Rotation.Yaw;
 	ASin = Sin(Rotation.Yaw / RadToUnrRot);
 	ACos = Cos(Rotation.Yaw / RadToUnrRot);
-	Initialize();
 	DrawHouse();
 }
 
@@ -294,14 +299,13 @@ function gen2(Pawn locPawn, int locType, optional int len = 10, optional int wid
 	Width = wid;
 	Height = hei;
 	BuildingType = locType;
-	GetNavData(MyData, BuildingType, Length, Width, Height, seed);
+	HouseSeed = seed;
 	MyPawn = locPawn;
 	HouseCenter.x = ((Length - 1) * LenW / 2); // совсем не центр, скорее реальна€ точка приложени€ дома
 	HouseCenter.y = ((Width - 1) * WidW / 2);
 	Angle.Yaw = Rotation.Yaw;
 	ASin = Sin(Rotation.Yaw / RadToUnrRot);
 	ACos = Cos(Rotation.Yaw / RadToUnrRot);
-	initialize();
 	DrawHouse();
 }
 
@@ -318,46 +322,49 @@ private function DrawHouse(optional bool full = false)
 	nav.x = (ViewLocation.x - Location.x) * ACos + (ViewLocation.y - Location.y) * ASin;
 	nav.y = (Location.x - ViewLocation.x) * ASin + (ViewLocation.y - Location.y) * aCos;
 	nav.z = ViewLocation.z - Location.z;
-	//GetNavData2(MyData, MyData2, Length, Width, Height, nav.x, nav.y, nav.z);
+
 	if (SetVisibility(nav)) // если что-то изменилось
 	{
 		GetVisibleMass();
 
-		for (k = 0; k < Height; k++)
+		if (bInitialized)
 		{
-			for (j = 0; j < Width; j++)
+			for (k = 0; k < Height; k++)
 			{
-				for (i = 0; i < Length; i++)
+				for (j = 0; j < Width; j++)
 				{
-					celll = i + j * Length + k * Length * Width;
-					// если €чейка должна быть видима, а она скрыта
-					if ((full || (MyData2.NavigationData[celll] == 2)) &&  !Cells[celll].bVisible)
+					for (i = 0; i < Length; i++)
 					{
-						pos.x = Location.x + (LenW * i - HouseCenter.x) * aCos - (WidW * j - HouseCenter.y) * ASin;
-						pos.y = Location.y + (LenW * i - HouseCenter.x) * ASin + (WidW * j - HouseCenter.y) * aCos;
-						pos.z = Location.z + HeiW * k;
-						wxPos = i == 0 ? 1 : i == Length - 1 ? 2 : 0; // €чейка находитс€ с краю, внутри или с другого краю?
-						wyPos = j == 0 ? 1 : j == Width - 1 ? 2 : 0; // дл€ другой оси
-						wzPos = k == 0 ? 1 : k == Height - 1 ? 2 : 0; // дл€ последней оси
-						// создаЄм еЄ
-						Cells[celll] = DrawCell(MyData.NavigationData[4 + celll], pos, wzPos, wxPos, wyPos, (i == MyData.NavigationData[0] && j == MyData.NavigationData[1]) || (i == MyData.NavigationData[2] && j == MyData.NavigationData[3]));
-						// последний параметр в предыдущей строке определ€ет: находитс€ ли в €чейке лестница
-					}
-					else if (!(full || (MyData2.NavigationData[celll] == 2)) && Cells[celll].bVisible) // иначе, если €чейка должна быть скрыта, а она видима
-					{
-						// очищаем содержимое €чейки
-						if (Cells[celll].North != None) Cells[celll].North.destroy();
-						if (Cells[celll].East != None) Cells[celll].East.destroy();
-						if (Cells[celll].South != None) Cells[celll].South.destroy();
-						if (Cells[celll].West != None) Cells[celll].West.destroy();
-						if (Cells[celll].Pol != None) Cells[celll].Pol.destroy();
-						// следующие элементы характерны не дл€ всех €чеек
-						if (Cells[celll].Lex != None) Cells[celll].Lex.destroy();
-						if (Cells[celll].Wex != None) Cells[celll].Wex.destroy();
-						if (Cells[celll].Roof != None) Cells[celll].Roof.destroy();
-						if (Cells[celll].Grain != None) Cells[celll].Grain.destroy();
-						// говорим, что €чейка скрыта
-						Cells[celll].bVisible = false;
+						celll = i + j * Length + k * Length * Width;
+						// если €чейка должна быть видима, а она скрыта
+						if ((full || (MyData2.NavigationData[celll] == 2)) &&  !Cells[celll].bVisible)
+						{
+							pos.x = Location.x + (LenW * i - HouseCenter.x) * aCos - (WidW * j - HouseCenter.y) * ASin;
+							pos.y = Location.y + (LenW * i - HouseCenter.x) * ASin + (WidW * j - HouseCenter.y) * aCos;
+							pos.z = Location.z + HeiW * k;
+							wxPos = i == 0 ? 1 : i == Length - 1 ? 2 : 0; // €чейка находитс€ с краю, внутри или с другого краю?
+							wyPos = j == 0 ? 1 : j == Width - 1 ? 2 : 0; // дл€ другой оси
+							wzPos = k == 0 ? 1 : k == Height - 1 ? 2 : 0; // дл€ последней оси
+							// создаЄм еЄ
+							Cells[celll] = DrawCell(MyData.NavigationData[4 + celll], pos, wzPos, wxPos, wyPos, (i == MyData.NavigationData[0] && j == MyData.NavigationData[1]) || (i == MyData.NavigationData[2] && j == MyData.NavigationData[3]));
+							// последний параметр в предыдущей строке определ€ет: находитс€ ли в €чейке лестница
+						}
+						else if (!(full || (MyData2.NavigationData[celll] == 2)) && Cells[celll].bVisible) // иначе, если €чейка должна быть скрыта, а она видима
+						{
+							// очищаем содержимое €чейки
+							if (Cells[celll].North != None) Cells[celll].North.destroy();
+							if (Cells[celll].East != None) Cells[celll].East.destroy();
+							if (Cells[celll].South != None) Cells[celll].South.destroy();
+							if (Cells[celll].West != None) Cells[celll].West.destroy();
+							if (Cells[celll].Pol != None) Cells[celll].Pol.destroy();
+							// следующие элементы характерны не дл€ всех €чеек
+							if (Cells[celll].Lex != None) Cells[celll].Lex.destroy();
+							if (Cells[celll].Wex != None) Cells[celll].Wex.destroy();
+							if (Cells[celll].Roof != None) Cells[celll].Roof.destroy();
+							if (Cells[celll].Grain != None) Cells[celll].Grain.destroy();
+							// говорим, что €чейка скрыта
+							Cells[celll].bVisible = false;
+						}
 					}
 				}
 			}
@@ -372,7 +379,7 @@ private function DrawHouse(optional bool full = false)
 				ClearNavNet();
 
 		}
-		else
+		else if (bInitialized)
 		{
 			if (Lifts.Length == 0)
 				AddLifts();
@@ -383,14 +390,28 @@ private function DrawHouse(optional bool full = false)
 	}
 }
 
+// провер€ем, надо ли инициализировать здание
+function CheckInitialize()
+{
+	// инициализируем, если ещЄ не инициализировано и игрок р€дом
+	if (!bInitialized && Visiblity != 0)
+		Initialize();
+}
+
 // выделение пам€ти под здание
-function initialize()
+function Initialize()
 {
 	local int i;
-	local cell celll; // тут происходит нечто неоптимальное, если смотреть со стороны выделени€ пам€ти
+	local cell celll; 
+	
+	GetNavData(MyData, BuildingType, Length, Width, Height, HouseSeed);
+	
+	// тут происходит нечто неоптимальное, если смотреть со стороны выделени€ пам€ти
 	// однако, иначе поступать не выходит
 	for (i = 0; i < Length * Width * Height; i++)
 		Cells[i] = celll;
+	
+	bInitialized = true;
 }
 
 private function actor drawHPart(int partType, int ang, const out vector posit) // передавать вектор "по ссылке", а не "по значению", const говорит о том, что вектор не будет мен€тьс€ в этой функции
@@ -510,6 +531,8 @@ function GetVisibleMass()
 
 	if (Visiblity != 0)
 	{
+		CheckInitialize();
+		
 		for (k = 0; k < Height; k++)
 		{
 			for (j = 0; j < Width; j++)
@@ -791,4 +814,6 @@ defaultproperties
 	DistFar = 20000
 	BuildingType = 0
 	Visiblity = 1
+	
+	bInitialized = false
 }
