@@ -19,6 +19,11 @@ struct Cell
 	}
 };
 
+struct NaviStruct
+{
+	var array<int> NaviData;
+};
+
 var int UtoR, Utor2, UtoR3;
 
 var float ASin, ACos;
@@ -26,7 +31,7 @@ var float ASin, ACos;
 var int DistNear, DistFar;
 // текуший этаж
 var int CurrentFloor;
-var MyNavigationStruct MyData, MyData2;
+var NaviStruct MyData, MyData2;
 // положение игрока
 var vector ViewLocation;
 // поворот игрока
@@ -47,7 +52,7 @@ var array<LiftController> Lifts;
 // пока false - информаци€ о доме не загружена в пам€ть а существует только LOD
 var bool bInitialized;
 
-// сем€ здани€
+// сем€ здани€ дл€ √ѕ—„
 var int HouseSeed;
 
 /*
@@ -75,8 +80,8 @@ var array<Cell> Cells;
 // массив навигационых узлов в виде списка
 var array<NavNode> NavList;
 
-dllimport final function GetNavData(out MyNavigationStruct NavData, int type, int len, int wid, int hei, int seed);
-dllimport final function GetNavData2(out MyNavigationStruct NavData,out MyNavigationStruct NavData2, int len, int wid, int hei, int xpos, int ypos, int zpos);
+dllimport final function GetNavData(out NaviStruct NavData, int type, int len, int wid, int hei, int seed);
+dllimport final function GetNavData2(out NaviStruct NavData,out NaviStruct NavData2, int len, int wid, int hei, int xpos, int ypos, int zpos);
 
 // делегат дл€ одноимЄнной функции из плеерконтроллера
 delegate GetPlayerViewPoint(out vector out_Location, out Rotator out_rotation);
@@ -337,7 +342,7 @@ private function DrawHouse(optional bool full = false)
 					{
 						celll = i + j * Length + k * Length * Width;
 						// если €чейка должна быть видима, а она скрыта
-						if ((full || (MyData2.NavigationData[celll] == 2)) &&  !Cells[celll].bVisible)
+						if ((full || (MyData2.NaviData[celll] == 2)) &&  !Cells[celll].bVisible)
 						{
 							pos.x = Location.x + (LenW * i - HouseCenter.x) * aCos - (WidW * j - HouseCenter.y) * ASin;
 							pos.y = Location.y + (LenW * i - HouseCenter.x) * ASin + (WidW * j - HouseCenter.y) * aCos;
@@ -346,10 +351,10 @@ private function DrawHouse(optional bool full = false)
 							wyPos = j == 0 ? 1 : j == Width - 1 ? 2 : 0; // дл€ другой оси
 							wzPos = k == 0 ? 1 : k == Height - 1 ? 2 : 0; // дл€ последней оси
 							// создаЄм еЄ
-							Cells[celll] = DrawCell(MyData.NavigationData[4 + celll], pos, wzPos, wxPos, wyPos, (i == MyData.NavigationData[0] && j == MyData.NavigationData[1]) || (i == MyData.NavigationData[2] && j == MyData.NavigationData[3]));
+							Cells[celll] = DrawCell(MyData.NaviData[4 + celll], pos, wzPos, wxPos, wyPos, (i == MyData.NaviData[0] && j == MyData.NaviData[1]) || (i == MyData.NaviData[2] && j == MyData.NaviData[3]));
 							// последний параметр в предыдущей строке определ€ет: находитс€ ли в €чейке лестница
 						}
-						else if (!(full || (MyData2.NavigationData[celll] == 2)) && Cells[celll].bVisible) // иначе, если €чейка должна быть скрыта, а она видима
+						else if (!(full || (MyData2.NaviData[celll] == 2)) && Cells[celll].bVisible) // иначе, если €чейка должна быть скрыта, а она видима
 						{
 							// очищаем содержимое €чейки
 							if (Cells[celll].North != None) Cells[celll].North.destroy();
@@ -540,9 +545,9 @@ function GetVisibleMass()
 				for (i = 0; i < Length; i++)
 				{
 					if ((isBitB(Visiblity, 1) && (i == 0))||(isBitB(Visiblity, 2) && (i == Length - 1)) || (isBitB(Visiblity, 3) && (j == Width - 1)) || (isBitB(Visiblity, 4) && (j == 0)) || (isBitB(Visiblity, 5) && (k == Height - 1)) || (isBitB(Visiblity, 6) && (abs(k - Currentfloor) < 3)))
-						MyData2.NavigationData[i + j*Length + k*Length*Width] = 2;
+						MyData2.NaviData[i + j*Length + k*Length*Width] = 2;
 					else
-						MyData2.NavigationData[i + j*Length + k*Length*Width] = 0;
+						MyData2.NaviData[i + j*Length + k*Length*Width] = 0;
 				}
 			}
 		}
@@ -556,7 +561,7 @@ function GetVisibleMass()
 	{
 		for (i = 0; i < Length * Width * Height; i++)
 		{
-			MyData2.NavigationData[i] = 0;
+			MyData2.NaviData[i] = 0;
 		}
 		
 		if (LOD == none)
@@ -614,8 +619,8 @@ function AddLifts()
 	for (i = 0; i < 2; i++)
 	{
 		liftLocation = Location;
-		liftLocation.x += (LenW * MyData.NavigationData[i * 2] - HouseCenter.x) * aCos - (WidW * MyData.NavigationData[i * 2 + 1] - HouseCenter.y) * ASin;
-		liftLocation.y += (LenW * MyData.NavigationData[i * 2] - HouseCenter.x) * ASin + (WidW * MyData.NavigationData[i * 2 + 1] - HouseCenter.y) * aCos;
+		liftLocation.x += (LenW * MyData.NaviData[i * 2] - HouseCenter.x) * aCos - (WidW * MyData.NaviData[i * 2 + 1] - HouseCenter.y) * ASin;
+		liftLocation.y += (LenW * MyData.NaviData[i * 2] - HouseCenter.x) * ASin + (WidW * MyData.NaviData[i * 2 + 1] - HouseCenter.y) * aCos;
 		Lifts[i] = Spawn(class'City.LiftController', MyPawn,, liftLocation, qwatrot(0));
 		Lifts[i].Create(MyPawn, Height, HeiW);
 	}
@@ -657,10 +662,10 @@ function GenNavNet()
 				pos.z = Location.z + HeiW * k + 70; // 70 - высота над полом
 
 				// находим информацию о €чейке
-				localCell = MyData.NavigationData[4 + addr];
+				localCell = MyData.NaviData[4 + addr];
 
 				// если это лестница
-				if (((i == MyData.NavigationData[0] && j == MyData.NavigationData[1]) || (i == MyData.NavigationData[2] && j == MyData.NavigationData[3])))
+				if (((i == MyData.NaviData[0] && j == MyData.NaviData[1]) || (i == MyData.NaviData[2] && j == MyData.NaviData[3])))
 				{
 					// создаЄм нижний узел и заносим его в список
 					Cells[addr].NodeBottom = Spawn(class'Base.NavNode', MyPawn,, LocShift(pos, -LenW * 0.35, WidW * 0.35), rot(0, 0, 0));

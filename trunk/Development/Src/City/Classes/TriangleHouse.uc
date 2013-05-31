@@ -151,7 +151,7 @@ function DrawCenter(float posX, float posY, float floor, float angle, Myhouse bl
 			if (j == Width - i)
 			{
 				addr = block1.Length - 1 + (block1.Width - i) * block1.Length + floor * block1.Length * block1.Width;
-				if (is2bit(block1.MyData.NavigationData[4 + addr], 1) != 1)
+				if (is2bit(block1.MyData.NaviData[4 + addr], 1) != 1)
 					BindNodes(localNode1, block1.Cells[addr].NodeNorth);
 			}
 			else
@@ -164,13 +164,13 @@ function DrawCenter(float posX, float posY, float floor, float angle, Myhouse bl
 				if (unormalBranch != 3)
 				{
 					addr = block3.Length - 1 + (i - 1) * block3.Length + floor * block3.Length * block3.Width;
-					if (is2bit(block3.MyData.NavigationData[4 + addr], 1) != 1)
+					if (is2bit(block3.MyData.NaviData[4 + addr], 1) != 1)
 						BindNodes(localNode1, block3.Cells[addr].NodeNorth);
 				}
 				else
 				{
 					addr = 0 + (block1.Width - i) * block3.Length + floor * block3.Length * block3.Width;
-					if (is2bit(block3.MyData.NavigationData[4 + addr], 3) != 1)
+					if (is2bit(block3.MyData.NaviData[4 + addr], 3) != 1)
 						BindNodes(localNode1, block3.Cells[addr].NodeSouth);
 				}
 			}
@@ -200,7 +200,7 @@ function DrawCenter(float posX, float posY, float floor, float angle, Myhouse bl
 			{
 				// добавляем связи с соседним зданием
 				addr = block2.Length - 1 + (block2.Width - j - 1) * block2.Length + floor * block2.Length * block2.Width;
-				if (is2bit(block2.MyData.NavigationData[4 + addr], 1) != 1)
+				if (is2bit(block2.MyData.NaviData[4 + addr], 1) != 1)
 					{
 						BindNodes(localNode1, block2.Cells[addr].NodeNorth);
 					}
