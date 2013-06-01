@@ -47,13 +47,12 @@ private function rotator QwatRot(float qYaw)
 
 function Gen(Pawn locPawn, optional int seed = 0)
 {
-	local vector locPos;
 	local NaviStruct Data;
 	local int i,j;
 	local int clustersCount;
 	local int thisCluster;
 	// параметры конкретного здания или кластера
-	local int hWid, hLen, hPosX, hPosY;
+	local int hWid, hLen, hHei, hPosX, hPosY;
 	MyPawn = locPawn;
 	CitySeed = seed;
 
@@ -71,51 +70,15 @@ function Gen(Pawn locPawn, optional int seed = 0)
 		CreateTrotuar(hPosX, hPosY, hLen, hWid);
 		for	(j = thisCluster; j < Data.NaviData[1 + i * 5]; j++)
 		{
-			hLen = Data.NaviData[1 + clustersCount * 5 + thisCluster + j * 4];
-			hWid = Data.NaviData[1 + clustersCount * 5 + thisCluster + j * 4 + 1];
-			hPosX = Data.NaviData[1 + clustersCount * 5 + thisCluster + j * 4 + 2];
-			hPosY = Data.NaviData[1 + clustersCount * 5 + thisCluster + j * 4 + 3];
-			CreateHouse(hPosX, hPosY, hLen, hWid, 5);
+			hLen = Data.NaviData[1 + clustersCount * 5 + j * 5];
+			hWid = Data.NaviData[1 + clustersCount * 5 + j * 5 + 1];
+			hHei = Data.NaviData[1 + clustersCount * 5 + j * 5 + 2];
+			hPosX = Data.NaviData[1 + clustersCount * 5 + j * 5 + 3];
+			hPosY = Data.NaviData[1 + clustersCount * 5 + j * 5 + 4];
+			CreateHouse(hPosX, hPosY, hLen, hWid, hHei);
 		}
 		thisCluster = Data.NaviData[1 + i * 5];
 	}
-
-	locPos = Location;
-
-	/*CreateHouse(locPos, 10, 10, 10);
-
-	locPos.Y = 7800;
-	CreateHouse(locPos, 10, 10, 10);
-
-	locPos.Y = 7800 + 6600;
-	CreateHouse(locPos, 10, 10, 10);
-
-	locPos.Y = 7800 * 0.5;
-	CreateRoad(locPos, 11, QwatRot(1));
-
-	locPos.X = 7800 * 0.5;
-	locPos.Y = 7800 + 6600 * 0.5;
-	CreateRoad(locPos, 22, QwatRot(0));
-
-	locPos.X = -7800 * 0.5;
-	locPos.Y = 0;
-	CreateRoad(locPos, 11, QwatRot(0));
-
-	locPos.X = 7800 * 0.5;
-	locPos.Y = 0;
-	CreateRoad(locPos, 11, QwatRot(0));
-
-	locPos.X = -7800 * 0.5;
-	locPos.Y = 7800 + 6600 * 0.5;
-	CreateRoad(locPos, 22, QwatRot(0));
-
-	locPos.X = 7800 * 0.5;
-	locPos.Y = 7800 * 0.5;
-	CreateRoadTriWay(locPos, QwatRot(2));
-
-	locPos.X = -7800 * 0.5;
-	locPos.Y = 7800 * 0.5;
-	CreateRoadTriWay(locPos, QwatRot(0));*/
 }
 
 function CreateHouse(int posX, int posY, int sizeX, int sizeY, int sizeZ)
@@ -123,11 +86,11 @@ function CreateHouse(int posX, int posY, int sizeX, int sizeY, int sizeZ)
 	local MyHouse locHouse;
 	local vector locPos;
 	locPos = Location;
-	locPos.x += posX * class'myhouse'.default.LenW;
-	locPos.y += posY * class'myhouse'.default.WidW;
+	locPos.x += posX * class'myhouse'.default.LenW + (sizeX * class'myhouse'.default.LenW) / 2;
+	locPos.y += posY * class'myhouse'.default.WidW + (sizeY * class'myhouse'.default.WidW) / 2;
 	locHouse = Spawn(class'City.myhouse', MyPawn,, locPos + HouseUpShift, rot(0, 0, 0));
 	locHouse.GetPlayerViewPoint = GetPlayerViewPoint;
-	locHouse.Gen(MyPawn, 0, sizeX, sizeY, sizeZ, CitySeed + (locPos.x * locPos.y));
+	locHouse.Gen2(MyPawn, 0, sizeX, sizeY, sizeZ, CitySeed + (locPos.x * locPos.y));
 	Houses.AddItem(locHouse);
 }
 
@@ -136,10 +99,10 @@ function CreateTrotuar(int posX, int posY, int sizeX, int sizeY)
 	local Trotuar locTrot;
 	local vector locPos;
 	locPos = Location;
-	locPos.x += posX * class'myhouse'.default.LenW;
-	locPos.y += posY * class'myhouse'.default.WidW;
+	locPos.x += posX * class'myhouse'.default.LenW + (sizeX * class'myhouse'.default.LenW) / 2;
+	locPos.y += posY * class'myhouse'.default.WidW + (sizeY * class'myhouse'.default.WidW) / 2;
 	locTrot = Spawn(class'City.Trotuar', MyPawn,, locPos, rot(0, 0, 0));
-	locTrot.SetScale(sizeX, sizeY);
+	locTrot.SetScale(sizeX + 1, sizeY + 1);
 }
 
 function CreateRoad(vector locat, float len, rotator angle)
