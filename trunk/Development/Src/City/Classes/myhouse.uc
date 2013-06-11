@@ -45,6 +45,8 @@ var rotator Angle;
 var vector HouseCenter;
 // тип здания (0 - обычное, 1 - часть трёхлучевого)
 var int BuildingType;
+// количество лестниц в здании
+var int StairsCount;
 
 // лифты
 var array<LiftController> Lifts;
@@ -80,7 +82,7 @@ var array<Cell> Cells;
 // массив навигационых узлов в виде списка
 var array<NavNode> NavList;
 
-dllimport final function GetNavData(out NaviStruct NavData, int type, int len, int wid, int hei, int seed);
+dllimport final function GetNavData(out NaviStruct NavData, int type, int len, int wid, int hei, int stairscoll, int seed);
 dllimport final function GetNavData2(out NaviStruct NavData,out NaviStruct NavData2, int len, int wid, int hei, int xpos, int ypos, int zpos);
 
 // делегат для одноимённой функции из плеерконтроллера
@@ -157,19 +159,19 @@ function Clear()
 }
 
 // возвращает 1 или 0 (бит числа "а" в позиции "b")
-private function int isbit(int a, int b)
+private function int getBit(int a, int b)
 {
 	return((a >> b) % 2);
 }
 
 // возвращает true или false (бит числа "а" в позиции "b")
-private function bool isBitB(int a, int b)
+private function bool isBit(int a, int b)
 {
 	return((a >> b) % 2 == 1);
 }
 
-// возвращает число от 0 до 4 (два бита из числа a в позиции b*2)
-private function int is2bit(int a, int b)
+// возвращает число от 0 до 3 (два бита из числа a в позиции b*2)
+private function int get2bit(int a, int b)
 {
 	return((a >> (b + b)) % 4);
 }
@@ -190,9 +192,7 @@ private function int is2bit(int a, int b)
 private function rotator QwatRot(float qYaw) // очень часто выполняемая функция
 {
 	local rotator rota;
-	//Rota.Pitch = 0; // обнуления не нужны
 	rota.Yaw = angle.Yaw +(qYaw == 0 ? 0 : qYaw == 1 ? UtoR : qYaw == 2 ? Utor2 : Utor3); // то же что qYaw * 90 * DegToRad * RadToUnrRot;
-	//Rota.Roll = 0;
 	return rota;
 }
 
@@ -200,10 +200,10 @@ private function rotator QwatRot(float qYaw) // очень часто выполняемая функция
 private function cell DrawCell(int celll, const out vector posit, int wzPos, int wxPos, int wyPos, bool st)
 {
 	local cell yachejka;
-	yachejka.South = drawHPart(Is2Bit(celll, 3), 3, posit);
-	yachejka.East = drawHPart(Is2Bit(celll, 2), 0, posit);
-	yachejka.North = drawHPart(Is2Bit(celll, 1), 1, posit);
-	yachejka.West = drawHPart(Is2Bit(celll, 0), 2, posit);
+	yachejka.South = drawHPart(get2bit(celll, 3), 3, posit);
+	yachejka.East = drawHPart(get2bit(celll, 2), 0, posit);
+	yachejka.North = drawHPart(get2bit(celll, 1), 1, posit);
+	yachejka.West = drawHPart(get2bit(celll, 0), 2, posit);
 
 	if (!st) // пол с потолком
 	{
@@ -211,7 +211,7 @@ private function cell DrawCell(int celll, const out vector posit, int wzPos, int
 	}
 	else
 	{
-		if ((wzPos == 1) && st) // пол первого этажа лестницы
+		if (wzPos == 1) // пол первого этажа лестницы
 		{
 			yachejka.Pol = Spawn(class'City.teststairfloor', MyPawn,, posit, angle);
 		}
@@ -222,15 +222,14 @@ private function cell DrawCell(int celll, const out vector posit, int wzPos, int
 	}
 
 	if (wxPos == 1)
-		yachejka.Lex = drawHOutPart(IsBit(celll, 7) * 2 + IsBit(celll, 6), 3, posit);
+		yachejka.Lex = drawHOutPart(get2bit(celll, 3), 3, posit);
 	else if (wxPos == 2)
-		yachejka.Lex = drawHOutPart(IsBit(celll, 3) * 2 + IsBit(celll,2), 1, posit);
+		yachejka.Lex = drawHOutPart(get2bit(celll, 1), 1, posit);
 
 	if (wyPos == 1)
-		yachejka.Wex = drawHOutPart(IsBit(celll, 5) * 2 + IsBit(celll, 4), 0, posit);
+		yachejka.Wex = drawHOutPart(get2bit(celll, 2), 0, posit);
 	else if
-		(wyPos == 2) yachejka.Wex = drawHOutPart(IsBit(celll, 1) * 2 + IsBit(celll, 0), 2, posit);
-
+		(wyPos == 2) yachejka.Wex = drawHOutPart(get2bit(celll, 0), 2, posit);
 
 	if (wzPos == 2) // если последний этаж
 	{
@@ -281,7 +280,7 @@ private function cell DrawCell(int celll, const out vector posit, int wzPos, int
 }
 
 // инициализация здания и выделение памяти (координаты положения актёра - угол здания)
-function Gen(Pawn locPawn, int locType, optional int len = 10, optional int wid = 10, optional int hei = 10, optional int seed = 0)
+function Gen(Pawn locPawn, int locType, int len, int wid, int hei, int seed)
 {
 	Length = len;
 	Width = wid;
@@ -298,7 +297,7 @@ function Gen(Pawn locPawn, int locType, optional int len = 10, optional int wid 
 }
 
 // инициализация здания и выделение памяти (координаты положения актёра - центр здания)
-function gen2(Pawn locPawn, int locType, optional int len = 10, optional int wid = 10, optional int hei = 10, optional int seed = 0)
+function gen2(Pawn locPawn, int locType, int len, int wid, int hei, int seed)
 {
 	Length = len;
 	Width = wid;
@@ -314,6 +313,16 @@ function gen2(Pawn locPawn, int locType, optional int len = 10, optional int wid
 	DrawHouse();
 }
 
+public function SetStairsCount(int stairs)
+{
+	// если здание ещё не сгенерировано
+	if (!bInitialized)
+	{
+		// меняем количество лестниц
+		StairsCount = stairs;
+	}
+}
+
 // прорисовка дома
 private function DrawHouse(optional bool full = false)
 {
@@ -324,6 +333,7 @@ private function DrawHouse(optional bool full = false)
 	// узнаём позицию и поворот игрока
 	GetPlayerViewPoint(ViewLocation, ViewRotation);
 
+	// поворачиваем вектор
 	nav.x = (ViewLocation.x - Location.x) * ACos + (ViewLocation.y - Location.y) * ASin;
 	nav.y = (Location.x - ViewLocation.x) * ASin + (ViewLocation.y - Location.y) * aCos;
 	nav.z = ViewLocation.z - Location.z;
@@ -342,7 +352,7 @@ private function DrawHouse(optional bool full = false)
 					{
 						celll = i + j * Length + k * Length * Width;
 						// если ячейка должна быть видима, а она скрыта
-						if ((full || (MyData2.NaviData[celll] == 2)) &&  !Cells[celll].bVisible)
+						if ((full || (MyData2.NaviData[celll] == 2)) && !Cells[celll].bVisible)
 						{
 							pos.x = Location.x + (LenW * i - HouseCenter.x) * aCos - (WidW * j - HouseCenter.y) * ASin;
 							pos.y = Location.y + (LenW * i - HouseCenter.x) * ASin + (WidW * j - HouseCenter.y) * aCos;
@@ -351,8 +361,7 @@ private function DrawHouse(optional bool full = false)
 							wyPos = j == 0 ? 1 : j == Width - 1 ? 2 : 0; // для другой оси
 							wzPos = k == 0 ? 1 : k == Height - 1 ? 2 : 0; // для последней оси
 							// создаём её
-							Cells[celll] = DrawCell(MyData.NaviData[4 + celll], pos, wzPos, wxPos, wyPos, (i == MyData.NaviData[0] && j == MyData.NaviData[1]) || (i == MyData.NaviData[2] && j == MyData.NaviData[3]));
-							// последний параметр в предыдущей строке определяет: находится ли в ячейке лестница
+							Cells[celll] = DrawCell(MyData.NaviData[StairsCount*2 + celll], pos, wzPos, wxPos, wyPos, IsStairHere(i, j, k));
 						}
 						else if (!(full || (MyData2.NaviData[celll] == 2)) && Cells[celll].bVisible) // иначе, если ячейка должна быть скрыта, а она видима
 						{
@@ -404,12 +413,12 @@ function CheckInitialize()
 }
 
 // выделение памяти под здание
-function Initialize()
+private function Initialize()
 {
 	local int i;
 	local cell celll; 
 	
-	GetNavData(MyData, BuildingType, Length, Width, Height, HouseSeed);
+	GetNavData(MyData, BuildingType, Length, Width, Height, StairsCount, HouseSeed);
 	
 	// тут происходит нечто неоптимальное, если смотреть со стороны выделения памяти
 	// однако, иначе поступать не выходит
@@ -417,6 +426,27 @@ function Initialize()
 		Cells[i] = celll;
 	
 	bInitialized = true;
+}
+
+// есть ли лестница в этих координатах
+function bool IsStairHere(int xPos, int yPos, int zPos)
+{
+	local int i;
+	local bool stairHere;
+	stairHere = false;
+	// для всех лестниц
+	for (i = 0; i < StairsCount; i++)
+	{
+		// если это координаты лестницы
+		if (MyData.NaviData[i * 2] == xPos
+			&&
+			MyData.NaviData[i * 2 + 1] == yPos)
+		{ // возвращаем истину
+			stairHere = true;
+		}
+	}
+	
+	return stairHere;
 }
 
 private function actor drawHPart(int partType, int ang, const out vector posit) // передавать вектор "по ссылке", а не "по значению", const говорит о том, что вектор не будет меняться в этой функции
@@ -467,7 +497,7 @@ private function actor drawHOutPart(int partType, int ang, const out vector posi
 }
 
 // функция меняет переменную Visiblity и возвращает -1 если изменений нет, иначе текущий этаж (0 - если этаж не важен)
-function bool SetVisibility(vector nav)
+private function bool SetVisibility(vector nav)
 {
 	// переменная - локальный аналог Visiblity
 	local int vis;
@@ -516,7 +546,7 @@ function bool SetVisibility(vector nav)
 	}
 
 	// если нет изменений - возвращаем -1
-	if (vis == Visiblity && (!isBitB(vis, 6) || floor == Currentfloor))
+	if (vis == Visiblity && (!isBit(vis, 6) || floor == Currentfloor))
 	{
 		changed = false;
 	}
@@ -544,14 +574,14 @@ function GetVisibleMass()
 			{
 				for (i = 0; i < Length; i++)
 				{
-					if ((isBitB(Visiblity, 1) && (i == 0))||(isBitB(Visiblity, 2) && (i == Length - 1)) || (isBitB(Visiblity, 3) && (j == Width - 1)) || (isBitB(Visiblity, 4) && (j == 0)) || (isBitB(Visiblity, 5) && (k == Height - 1)) || (isBitB(Visiblity, 6) && (abs(k - Currentfloor) < 3)))
+					if ((isBit(Visiblity, 1) && (i == 0))||(isBit(Visiblity, 2) && (i == Length - 1)) || (isBit(Visiblity, 3) && (j == Width - 1)) || (isBit(Visiblity, 4) && (j == 0)) || (isBit(Visiblity, 5) && (k == Height - 1)) || (isBit(Visiblity, 6) && (abs(k - Currentfloor) < 3)))
 						MyData2.NaviData[i + j*Length + k*Length*Width] = 2;
 					else
 						MyData2.NaviData[i + j*Length + k*Length*Width] = 0;
 				}
 			}
 		}
-		
+
 		if (LOD != none)
 		{
 			Lod.Destroy();
@@ -566,7 +596,7 @@ function GetVisibleMass()
 		
 		if (LOD == none)
 		{
-			LOD = Spawn(class'City.LODHouse', MyPawn,, Location+LOD_SHIFT, Rotation);
+			LOD = Spawn(class'City.LODHouse', MyPawn,, Location + LOD_SHIFT, Rotation);
 			LOD.SetScale(Length, Width, Height);
 		}
 		else
@@ -576,6 +606,7 @@ function GetVisibleMass()
 	}
 }
 
+// найти ближайшего Pawn который находится рядом со зданием
 function Pawn FindNearlyPawn()
 {
 	local Pawn locPawn, nearlyPawn;
@@ -592,7 +623,8 @@ function Pawn FindNearlyPawn()
 	return nearlyPawn;
 }
 
-function bool IsnearPawn()
+// рядом со зданием есть Pawn
+function bool IsNearPawn()
 {
 	local Pawn locPawn, nearlyPawn;
 	local float locDist;
@@ -616,7 +648,7 @@ function AddLifts()
 	local int i;
 	local vector liftLocation;
 	
-	for (i = 0; i < 2; i++)
+	for (i = 0; i < StairsCount; i++)
 	{
 		liftLocation = Location;
 		liftLocation.x += (LenW * MyData.NaviData[i * 2] - HouseCenter.x) * aCos - (WidW * MyData.NaviData[i * 2 + 1] - HouseCenter.y) * ASin;
@@ -662,10 +694,10 @@ function GenNavNet()
 				pos.z = Location.z + HeiW * k + 70; // 70 - высота над полом
 
 				// находим информацию о ячейке
-				localCell = MyData.NaviData[4 + addr];
+				localCell = MyData.NaviData[StairsCount*2 + addr];
 
 				// если это лестница
-				if (((i == MyData.NaviData[0] && j == MyData.NaviData[1]) || (i == MyData.NaviData[2] && j == MyData.NaviData[3])))
+				if (IsStairHere(i, j, k))
 				{
 					// создаём нижний узел и заносим его в список
 					Cells[addr].NodeBottom = Spawn(class'Base.NavNode', MyPawn,, LocShift(pos, -LenW * 0.35, WidW * 0.35), rot(0, 0, 0));
@@ -762,11 +794,11 @@ function GenNavNet()
 
 
 				// добавляем необходимые связи с узлами соседних ячеек (только если есть двери или проходы)
-				if (i != 0 && Is2Bit(localCell, 3) > 1)
+				if (i != 0 && get2Bit(localCell, 3) > 1)
 				{
 					BindNodes(Cells[addr].NodeSouth, Cells[addr - 1].NodeNorth);
 				}
-				if (j != 0 && Is2Bit(localCell, 2) > 1)
+				if (j != 0 && get2Bit(localCell, 2) > 1)
 				{
 					BindNodes(Cells[addr].NodeWest, Cells[addr - Length].NodeEast);
 				}
@@ -819,6 +851,7 @@ defaultproperties
 	DistFar = 20000
 	BuildingType = 0
 	Visiblity = 1
+	StairsCount = 3
 	
 	bInitialized = false
 }
