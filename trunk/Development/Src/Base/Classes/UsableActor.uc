@@ -3,7 +3,7 @@
  *
  *	Creation date: 01.04.2012 22:10
  *	Copyright 2013, FHS
- *	
+ *
  *	Актёр для тестирования определённых функций, связанных с использованием объектов
  *	Не используйте его в конечном проекте
  */
@@ -26,16 +26,28 @@ public function String GetActionName(optional int actionIndex = 0)
 	return Actions[actionIndex].Name;
 }
 
+// вернуть ID текущего actor'а
+public function String GetActorID()
+{
+	/* local array<string> SplitName;
+	local string Delimiter;
+
+	Delimiter = "_";
+	SplitName = SplitString(string(self.Name),Delimiter);	 */
+	//return SplitName[1];
+	return string(self.Tag);
+}
+
 public function Use(Pawn uInstigator, optional int actionIndex = 0)
 {
 	// итератор foreach
 	local SequenceObject individualEvent;
 	// все объекты кисмета обрабатывающие использование UsableActor
 	local array<SequenceObject> eventList;
-	
+
 	// Воспроизвести звук использования
 	PlaySound(SoundCue'A_Gameplay.Gameplay.MessageBeepCue', true);
-	
+
 	// ищем все обработчики использования UsableActor
 	WorldInfo.GetGameSequence().FindSeqObjectsByClass(class'SeqEvent_UseUsableActor', true, eventList);
 	// Ищем наш SeqEvent в кисмете
@@ -56,7 +68,7 @@ public function Use(Pawn uInstigator, optional int actionIndex = 0)
 			break;
 		}
 	}
-	
+
 	switch (actionIndex)
 	{
 		case 1:

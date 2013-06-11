@@ -1,6 +1,6 @@
-class UnGameInfo extends UTGame;
+class UnGameInfo extends BaseGameInfo;
 
-function PostBeginPlay()
+simulated event PostBeginPlay()
 {
 	Super.PostBeginPlay();
 
@@ -2284,11 +2284,11 @@ defaultproperties
 	bPauseable=True
 	Acronym="UN"
 	bUseClassicHUD=false
-	
+
 	MapPrefixes.Empty
 	MapPrefixes(0)="UN"
 	DefaultMapPrefixes.Empty
-	
+
 	ConsolePlayerControllerClass=class'UTGame.UTConsolePlayerController'
 	PlayerReplicationInfoClass=class'UTGame.UTPlayerReplicationInfo'
 	GameReplicationInfoClass=class'UTGame.UTGameReplicationInfo'

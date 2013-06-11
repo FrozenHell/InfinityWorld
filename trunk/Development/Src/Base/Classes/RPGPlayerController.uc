@@ -24,7 +24,30 @@ var bool bGamePaused;
 // скорость персонажа
 var float WalkSpeed, RunSpeed;
 
+// экземпляр доступа к инвентарю
+var PawnInventory_Provider Inventory;
+
 // --------- методы -----------
+
+exec function GetTypesCount()
+{
+	`log("Types count:" @ BaseGameInfo(WorldInfo.Game).GDBM.GetTypeCount() );
+}
+
+exec function GenCon()
+{
+	Spawn(class'ContainerActor',,,Pawn.Location+vect(100.0,100.0,0.0) );
+}
+
+exec function SaveGame()
+{
+	BaseGameInfo(WorldInfo.Game).GDBM.SaveDataBase();
+}
+
+exec function DropItem()
+{
+	Inventory.Drop("3","0","1");
+}
 
 // нажали Esc
 exec function ShowPauseMenu()
@@ -76,10 +99,10 @@ exec function UseActor_pressed()
 	{
 		// указываем, какого актёра на мужно будет использовать
 		ActorForUse = HitActor;
-		
+
 		// указываем, что актёр ещё не обработан
 		bUsePressed = true;
-		
+
 		// пока не истечёт таймер, его повторные запуски будут игнорироваться
 		SetTimer(1, false, 'ShowAdditionalActions');
 	}
@@ -115,12 +138,12 @@ exec function UseActor_released(optional int idxAction = 0)
 	local vector hitNormal, hitLocation;
 	local vector viewLocation;
 	local rotator viewRotation;
-	
+
 	// если нам ещё нужно обработать актёра
 	if (bUsePressed)
 	{
 		bUsePressed = false;
-		
+
 		GetPlayerViewPoint(viewLocation, viewRotation);
 		HitActor = Trace(hitLocation, hitNormal, viewLocation + MaxUseRange * vector(viewRotation), viewLocation, true);
 
@@ -161,7 +184,7 @@ function CheckUsableActors()
 		// если объект - это сенсорный экран, тогда двигаем курсор по нему
 		if (TouchScreen(HitActor) != None)
 		{
-			TouchScreen(HitActor).SetCursorPosition(hitLocation);	
+			TouchScreen(HitActor).SetCursorPosition(hitLocation);
 		}
 
 		// выводим "Нажмите F чтобы ..."
@@ -194,7 +217,7 @@ function CheckUsableActors()
 
 			// удаляем действия с экрана
 			GFxHUD.RemoveActions();
-			
+
 			HUDUsableActor = None;
 		}
 	}
@@ -202,14 +225,21 @@ function CheckUsableActors()
 
 simulated event PostBeginPlay()
 {
+	local array<string> SplitName;
+	local string Delimiter;
+
 	Super.PostBeginPlay();
-	
+
 	GFxHUD = new Class'Base.GFxMovie_PlayerHUD';
 	GFxHUD.Initialize();
-	
+
 	GFxPauseMenu = new Class'Base.GFxMovie_PauseMenu';
 	GFxPauseMenu.Initialize(self);
 	GFxPauseMenu.MenuEvent = PauseMenuEvent;
+
+	Delimiter = "_";
+	SplitName = SplitString(string(self.Name),Delimiter);
+	Inventory = BaseGameInfo(WorldInfo.Game).GDBM.RegisterPawnInventory( int(SplitName[1]) );
 }
 
 // при нажатии левого Shift
@@ -240,7 +270,7 @@ defaultproperties
 	HUDUsableActor = None
 	bGamePaused = false
 	bUsePressed = false
-	
+
 	RunSpeed = 440.0
 	WalkSpeed = 200.0
 }

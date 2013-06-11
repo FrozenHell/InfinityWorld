@@ -1,0 +1,10 @@
+//=============================================================================
+// Author: Sebastian Schlicht, 2010-2012 Arkanology Games
+//=============================================================================
+/**
+ * Database functions global definies
+ */
+
+`define DB_InitString(aString,aStrLen) {`aString=class'DB_Defines'.static.initString(`aStrLen);}
+`define DB_String2Vec(aStr,aVec) {`aVec=class'DB_Defines'.static.string2Vec(`aStr);}
+`define DB_String2Rot(aStr,aRot) {`aRot=class'DB_Defines'.static.string2Rot(`aStr);}

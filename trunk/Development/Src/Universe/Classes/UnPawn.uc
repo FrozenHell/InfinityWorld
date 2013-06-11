@@ -1,4 +1,4 @@
-class UnPawn extends UTPawn;
+class UnPawn extends RPGPawn;
 
 function bool Dodge(eDoubleClickDir DoubleClickMove)
 {
@@ -13,7 +13,7 @@ defaultproperties
 	Name="Default__UnPawn"
 
 	// персонаж по умолчанию ходит
-	GroundSpeed = 440.0
+	//GroundSpeed = 440.0
 
 	// высокая скорость полёта для отладки
 	AirSpeed = 1000.0
