@@ -19,6 +19,12 @@ struct Cell
 	}
 };
 
+struct Floor
+{
+	var vector Pos;
+	var vector Scale;
+};
+
 struct NaviStruct
 {
 	var array<int> NaviData;
@@ -47,6 +53,14 @@ var vector HouseCenter;
 var int BuildingType;
 // количество лестниц в здании
 var int StairsCount;
+// сдвиг информации о стенах
+var int WallsOffset;
+// элементы пола
+var array<testFloor> Floors;
+// информаци€ об элементах пола
+var array<Floor> FloorsInfo;
+// количество элементов пола
+var int FloorsCount;
 
 // лифты
 var array<LiftController> Lifts;
@@ -121,7 +135,7 @@ event Destroyed()
 	ClearNavNet();
 	// очищаем €чейки здани€
 	Clear();
-	
+
 	// удал€ем лифты
 	RemoveLifts();
 
@@ -207,7 +221,7 @@ private function cell DrawCell(int celll, const out vector posit, int wzPos, int
 
 	if (!st) // пол с потолком
 	{
-		yachejka.Pol = Spawn(class'City.testfloor', MyPawn,, posit, angle);
+		//yachejka.Pol = Spawn(class'City.testfloor', MyPawn,, posit, angle);
 	}
 	else
 	{
@@ -361,7 +375,7 @@ private function DrawHouse(optional bool full = false)
 							wyPos = j == 0 ? 1 : j == Width - 1 ? 2 : 0; // дл€ другой оси
 							wzPos = k == 0 ? 1 : k == Height - 1 ? 2 : 0; // дл€ последней оси
 							// создаЄм еЄ
-							Cells[celll] = DrawCell(MyData.NaviData[StairsCount*2 + celll], pos, wzPos, wxPos, wyPos, IsStairHere(i, j, k));
+							Cells[celll] = DrawCell(MyData.NaviData[WallsOffset + celll], pos, wzPos, wxPos, wyPos, IsStairHere(i, j, k));
 						}
 						else if (!(full || (MyData2.NaviData[celll] == 2)) && Cells[celll].bVisible) // иначе, если €чейка должна быть скрыта, а она видима
 						{
@@ -384,7 +398,18 @@ private function DrawHouse(optional bool full = false)
 			}
 		}
 
-		if (Visiblity == 0)
+		if (Visiblity != 0)
+		{
+			if (Lifts.Length == 0)
+				AddLifts();
+
+			if (NavList.Length == 0)
+				GenNavNet();
+
+			if (Floors.Length == 0)
+				AddFloors();
+		}
+		else if (bInitialized)
 		{
 			if (Lifts.Length != 0)
 				RemoveLifts();
@@ -392,14 +417,8 @@ private function DrawHouse(optional bool full = false)
 			if (NavList.Length != 0)
 				ClearNavNet();
 
-		}
-		else if (bInitialized)
-		{
-			if (Lifts.Length == 0)
-				AddLifts();
-
-			if (NavList.Length == 0)
-				GenNavNet();
+			if (Floors.Length != 0)
+				RemoveFloors();
 		}
 	}
 }
@@ -412,19 +431,73 @@ function CheckInitialize()
 		Initialize();
 }
 
+function AddFloors()
+{
+	local int i, k;
+	local vector pos;
+	local testfloor localFloor;
+
+	for (k = 0; k < Height; k++)
+		for (i = 0; i < FloorsCount; i++)
+		{
+			pos = FloorsInfo[i].Pos;
+			pos.z = Location.z + HeiW * k;
+			localFloor = Spawn(class'City.testfloor', MyPawn,, pos, angle);
+			localFloor.SetScale(FloorsInfo[i].Scale);
+			Floors.AddItem(localFloor);
+		}
+}
+
+function RemoveFloors()
+{
+	local int i;
+
+	for (i = 0; i < FloorsCount; i++)
+		Floors[i].Destroy();
+	Floors.Remove(0, Floors.Length);
+}
+
 // выделение пам€ти под здание
 private function Initialize()
 {
-	local int i;
-	local cell celll; 
-	
+	local int i, offset;
+	local int pos1X, pos1Y, pos2X, pos2Y;
+	local float posX, posY;
+	local cell celll;
+	local Floor locFloor;
+
+	// забираем информацию о здании
 	GetNavData(MyData, BuildingType, Length, Width, Height, StairsCount, HouseSeed);
-	
-	// тут происходит нечто неоптимальное, если смотреть со стороны выделени€ пам€ти
-	// однако, иначе поступать не выходит
+
+	// пересчитываем и сохран€ем координаты кусков пола
+	offset = StairsCount * 2 + 1;
+	for (i = 0; i < MyData.NaviData[offset - 1]; i++)
+	{
+		pos1X = MyData.NaviData[offset + i * 4];
+		pos1Y = MyData.NaviData[offset + i * 4 + 1];
+		pos2X = MyData.NaviData[offset + i * 4 + 2];
+		pos2Y = MyData.NaviData[offset + i * 4 + 3];
+
+		locFloor.Scale.X = pos2X - pos1X;
+		locFloor.Scale.Y = pos2Y - pos1Y;
+		locFloor.Scale.Z = 1.0;
+
+		posX = (pos2X + pos1X - 1) / 2.0;
+		posY = (pos2Y + pos1Y - 1) / 2.0;
+		locFloor.Pos = Location;
+		locFloor.Pos.x += (LenW * posX - HouseCenter.x) * aCos - (WidW * posY - HouseCenter.y) * ASin;
+		locFloor.Pos.y += (LenW * posX - HouseCenter.x) * ASin + (WidW * posY - HouseCenter.y) * aCos;
+
+		FloorsInfo[i] = locFloor;
+	}
+
+	FloorsCount = MyData.NaviData[offset - 1];
+	WallsOffset = offset + FloorsCount * 4;
+
+	// выдел€ем пам€ть под €чейки здани€
 	for (i = 0; i < Length * Width * Height; i++)
 		Cells[i] = celll;
-	
+
 	bInitialized = true;
 }
 
@@ -445,7 +518,7 @@ function bool IsStairHere(int xPos, int yPos, int zPos)
 			stairHere = true;
 		}
 	}
-	
+
 	return stairHere;
 }
 
@@ -502,12 +575,12 @@ private function bool SetVisibility(vector nav)
 	// переменна€ - локальный аналог Visiblity
 	local int vis;
 	// этаж
-	local int floor;
+	local int currFloor;
 	local bool changed;
 	// ставим переменной vis стандартное значение
 	// ноль останетс€, если дом находитс€ очень далеко, что скажет о том, что дом надо скрыть или подгрузить LOD
 	vis = 0;
-	floor = 0;
+	currFloor = 0;
 	// если дом не далеко
 	if (Vsize(nav) < DistFar)
 	{
@@ -540,20 +613,20 @@ private function bool SetVisibility(vector nav)
 		if (Vsize(nav) < DistNear)
 		{
 			// определ€ем текущий этаж
-			floor = (nav.z + 30) / HeiW;
+			currFloor = (nav.z + 30) / HeiW;
 			vis += 64;
 		}
 	}
 
 	// если нет изменений - возвращаем -1
-	if (vis == Visiblity && (!isBit(vis, 6) || floor == Currentfloor))
+	if (vis == Visiblity && (!isBit(vis, 6) || currFloor == Currentfloor))
 	{
 		changed = false;
 	}
 	else
 	{
 		changed = true;
-		Currentfloor = floor;
+		Currentfloor = currFloor;
 		Visiblity = vis;
 	}
 	return changed;
@@ -567,7 +640,7 @@ function GetVisibleMass()
 	if (Visiblity != 0)
 	{
 		CheckInitialize();
-		
+
 		for (k = 0; k < Height; k++)
 		{
 			for (j = 0; j < Width; j++)
@@ -593,7 +666,7 @@ function GetVisibleMass()
 		{
 			MyData2.NaviData[i] = 0;
 		}
-		
+
 		if (LOD == none)
 		{
 			LOD = Spawn(class'City.LODHouse', MyPawn,, Location + LOD_SHIFT, Rotation);
@@ -647,7 +720,7 @@ function AddLifts()
 {
 	local int i;
 	local vector liftLocation;
-	
+
 	for (i = 0; i < StairsCount; i++)
 	{
 		liftLocation = Location;
@@ -694,7 +767,7 @@ function GenNavNet()
 				pos.z = Location.z + HeiW * k + 70; // 70 - высота над полом
 
 				// находим информацию о €чейке
-				localCell = MyData.NaviData[StairsCount*2 + addr];
+				localCell = MyData.NaviData[WallsOffset + addr];
 
 				// если это лестница
 				if (IsStairHere(i, j, k))
@@ -851,7 +924,9 @@ defaultproperties
 	DistFar = 20000
 	BuildingType = 0
 	Visiblity = 1
-	StairsCount = 3
-	
+	StairsCount = 2
+	WallsOffset = 0;
+	FloorsCount = 0;
+
 	bInitialized = false
 }
