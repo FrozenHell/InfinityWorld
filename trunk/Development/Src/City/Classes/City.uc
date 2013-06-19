@@ -41,7 +41,7 @@ simulated event PostBeginPlay()
 private function rotator QwatRot(float qYaw)
 {
 	local rotator rota;
-	rota.Yaw = qYaw == 0 ? 0 : qYaw == 1 ? UtoR : qYaw == 2 ? Utor2 : Utor3; // то же что qYaw * 90 * DegToRad * RadToUnrRot;
+	rota.Yaw = qYaw == 0 ? 0 : qYaw == 1 ? UtoR : qYaw == 2 ? Utor2 : Utor3;
 	return rota;
 }
 
@@ -57,7 +57,7 @@ function Gen(Pawn locPawn, optional int seed = 0)
 	CitySeed = seed;
 
 	// получаем данные
-	GetNavData(Data, 20, CitySeed);
+	GetNavData(Data, 600, CitySeed);
 
 	clustersCount = Data.NaviData[0];
 	thisCluster = 0;

@@ -2,19 +2,25 @@ class TestFloor extends ArchitecturalMesh;
 
 var() const editconst StaticMeshComponent StaticMeshComponent;
 
-var MaterialInstanceConstant MatIC, MatInst_Parent;
+var MaterialInstanceConstant MatIC1, MatIC2, MatInst_Top, MatInst_Bottom;
 
 simulated function PostBeginPlay()
 {
-	MatIC = new(None) Class'MaterialInstanceConstant';
-	MatIC.SetParent(MatInst_Parent);
-	StaticMeshComponent.SetMaterial(0, MatIC);
+	MatIC1 = new(None) Class'MaterialInstanceConstant';
+	MatIC1.SetParent(MatInst_Top);
+	StaticMeshComponent.SetMaterial(0, MatIC1);
+	
+	MatIC2 = new(None) Class'MaterialInstanceConstant';
+	MatIC2.SetParent(MatInst_Bottom);
+	StaticMeshComponent.SetMaterial(1, MatIC2);
 }
 
 public function SetScale(vector locScale)
 {
-	MatIC.SetScalarParameterValue('TileU', locScale.X);
-	MatIC.SetScalarParameterValue('TileV', locScale.Y);
+	MatIC1.SetScalarParameterValue('TileU', locScale.X);
+	MatIC1.SetScalarParameterValue('TileV', locScale.Y);
+	MatIC2.SetScalarParameterValue('TileU', locScale.X);
+	MatIC2.SetScalarParameterValue('TileV', locScale.Y);
 	SetDrawScale3D(locScale);
 }
 
@@ -29,5 +35,6 @@ defaultProperties
 	Components.add(StaticMeshComponent)
 	StaticMeshComponent = StaticMeshComponent;
 
-	MatInst_Parent = MaterialInstanceConstant'Houses.LODs.LODTopMaterial_INST'
+	MatInst_Top = MaterialInstanceConstant'Houses.Test1.FloorMaterial_INST'
+	MatInst_Bottom = MaterialInstanceConstant'Houses.Test1.FloorMaterial_INST'
 }
