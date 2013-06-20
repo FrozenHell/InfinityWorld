@@ -7,7 +7,7 @@ class MyHouse extends Actor
 struct Cell
 {
 	// стены и части строени€ прив€занные к этому узлу
-	var Actor North, East, West, South, Lex, Wex, Pol, Roof, Grain;
+	var Actor North, East, West, South, Pol, Roof, Grain;
 	// видим или нет этот блок
 	var bool bVisible;
 	// крайние узлы путей, прив€занные к этой €чейке (нужны только на момент создани€ здани€)
@@ -19,6 +19,7 @@ struct Cell
 	}
 };
 
+// пол какого-либо этажа
 struct Floor
 {
 	var vector Pos;
@@ -157,9 +158,6 @@ function Clear()
 				Cells[i].South.destroy();
 				Cells[i].West.destroy();
 				Cells[i].Pol.destroy();
-				// следующие элементы характерны не дл€ всех €чеек
-				if (Cells[i].Lex != None) Cells[i].Lex.destroy();
-				if (Cells[i].Wex != None) Cells[i].Wex.destroy();
 				if (Cells[i].Roof != None) Cells[i].Roof.destroy();
 				if (Cells[i].Grain != None) Cells[i].Grain.destroy();
 				// указать что €чейка скрыта
@@ -187,7 +185,7 @@ private function bool isBit(int a, int b)
 // возвращает число от 0 до 3 (два бита из числа a в позиции b*2)
 private function int get2bit(int a, int b)
 {
-	return((a >> (b + b)) % 4);
+	return((a >> (b << 1)) % 4);
 }
 
 /*
@@ -214,16 +212,33 @@ private function rotator QwatRot(float qYaw) // очень часто выполн€ема€ функци€
 private function cell DrawCell(int celll, const out vector posit, int wzPos, int wxPos, int wyPos, bool st)
 {
 	local cell yachejka;
-	yachejka.South = drawHPart(get2bit(celll, 3), 3, posit);
-	yachejka.East = drawHPart(get2bit(celll, 2), 0, posit);
-	yachejka.North = drawHPart(get2bit(celll, 1), 1, posit);
-	yachejka.West = drawHPart(get2bit(celll, 0), 2, posit);
-
-	if (!st) // пол с потолком
+	if (wxPos == 1)
 	{
-		//yachejka.Pol = Spawn(class'City.testfloor', MyPawn,, posit, angle);
+		yachejka.South = drawHOutPart(get2bit(celll, 3), 3, posit);
 	}
 	else
+	{
+		if (wxPos == 2)
+		{
+			yachejka.North = drawHOutPart(get2bit(celll, 1), 1, posit);
+		}
+		yachejka.South = drawHPart(get2bit(celll, 3), 3, posit);
+	}
+	
+	if (wyPos == 1)
+	{
+		yachejka.East = drawHOutPart(get2bit(celll, 2), 0, posit);
+	}
+	else
+	{
+		if (wyPos == 2)
+		{
+			yachejka.West = drawHOutPart(get2bit(celll, 0), 2, posit);
+		}
+		yachejka.East = drawHPart(get2bit(celll, 2), 0, posit);
+	}
+
+	if (st)
 	{
 		if (wzPos == 1) // пол первого этажа лестницы
 		{
@@ -234,16 +249,6 @@ private function cell DrawCell(int celll, const out vector posit, int wzPos, int
 			yachejka.Pol = Spawn(class'City.teststair', MyPawn,, posit, angle);
 		}
 	}
-
-	if (wxPos == 1)
-		yachejka.Lex = drawHOutPart(get2bit(celll, 3), 3, posit);
-	else if (wxPos == 2)
-		yachejka.Lex = drawHOutPart(get2bit(celll, 1), 1, posit);
-
-	if (wyPos == 1)
-		yachejka.Wex = drawHOutPart(get2bit(celll, 2), 0, posit);
-	else if
-		(wyPos == 2) yachejka.Wex = drawHOutPart(get2bit(celll, 0), 2, posit);
 
 	if (wzPos == 2) // если последний этаж
 	{
@@ -385,9 +390,6 @@ private function DrawHouse(optional bool full = false)
 							if (Cells[celll].South != None) Cells[celll].South.destroy();
 							if (Cells[celll].West != None) Cells[celll].West.destroy();
 							if (Cells[celll].Pol != None) Cells[celll].Pol.destroy();
-							// следующие элементы характерны не дл€ всех €чеек
-							if (Cells[celll].Lex != None) Cells[celll].Lex.destroy();
-							if (Cells[celll].Wex != None) Cells[celll].Wex.destroy();
 							if (Cells[celll].Roof != None) Cells[celll].Roof.destroy();
 							if (Cells[celll].Grain != None) Cells[celll].Grain.destroy();
 							// говорим, что €чейка скрыта
@@ -431,6 +433,7 @@ function CheckInitialize()
 		Initialize();
 }
 
+// добавить полы на все этажи
 function AddFloors()
 {
 	local int i, k;
@@ -448,6 +451,7 @@ function AddFloors()
 		}
 }
 
+// удалить все полы
 function RemoveFloors()
 {
 	local int i;
@@ -527,9 +531,6 @@ private function actor drawHPart(int partType, int ang, const out vector posit) 
 	local actor mypExem;
 	switch (partType)
 	{
-		case 0:
-			mypExem = Spawn(class'City.testwindow', MyPawn,, posit, qwatrot(ang));
-			break;
 		case 1:
 			mypExem = Spawn(class'City.testwall', MyPawn,, posit, qwatrot(ang));
 			break;
@@ -540,6 +541,7 @@ private function actor drawHPart(int partType, int ang, const out vector posit) 
 			mypExem = Spawn(class'City.testspace', MyPawn,, posit, qwatrot(ang));
 			break;
 		default:
+			`warn("ѕопытка создать несуществующий элемент здани€");
 			break;
 	}
 	return mypExem;
@@ -551,8 +553,7 @@ private function actor drawHOutPart(int partType, int ang, const out vector posi
 	switch (partType)
 	{
 		case 0:
-			// внутренние и внешние окна объединены
-			mypExem = None;//Spawn(class'City.testwindowex', MyPawn,, posit, qwatrot(ang));
+			mypExem = Spawn(class'City.testwindow', MyPawn,, posit, qwatrot(ang));
 			break;
 		case 1:
 			mypExem = Spawn(class'City.testwallex', MyPawn,, posit, qwatrot(ang));
@@ -564,6 +565,7 @@ private function actor drawHOutPart(int partType, int ang, const out vector posi
 			mypExem = Spawn(class'City.testspaceex', MyPawn,, posit, qwatrot(ang));
 			break;
 		default:
+			`warn("ѕопытка создать несуществующий элемент здани€");
 			break;
 	}
 	return mypExem;
@@ -716,6 +718,7 @@ function bool IsNearPawn()
 		return false;
 }
 
+// добавить все лифты
 function AddLifts()
 {
 	local int i;
@@ -731,6 +734,7 @@ function AddLifts()
 	}
 }
 
+// удалить лифты
 function RemoveLifts()
 {
 	local LiftController localLift;
@@ -885,6 +889,7 @@ static function BindNodes(NavNode A, NavNode B)
 	B.AddRelation(A);
 }
 
+// очистить навигационную сеть
 function ClearNavNet()
 {
 	local NavNode localNode;
