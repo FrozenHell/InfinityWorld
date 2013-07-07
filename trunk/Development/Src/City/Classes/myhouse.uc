@@ -659,7 +659,7 @@ function GetVisibleMass()
 
 		if (LOD != none)
 		{
-			Lod.Destroy();
+			LOD.Destroy();
 		}
 	}
 	else
@@ -676,7 +676,7 @@ function GetVisibleMass()
 		}
 		else
 		{
-			`warn("лишн€€ попытка выгрузки здани€");
+			`warn("ошибка: LOD не должен существовать в данный момент");
 		}
 	}
 }

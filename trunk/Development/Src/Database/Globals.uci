@@ -8,3 +8,11 @@
 `define DB_InitString(aString,aStrLen) {`aString=class'DB_Defines'.static.initString(`aStrLen);}
 `define DB_String2Vec(aStr,aVec) {`aVec=class'DB_Defines'.static.string2Vec(`aStr);}
 `define DB_String2Rot(aStr,aRot) {`aRot=class'DB_Defines'.static.string2Rot(`aStr);}
+
+
+`if (! `isdefined(FINAL_RELEASE))
+	`define Warn_if(cond, mess)\
+	{if (`cond) `warn("<warn_if>"@`mess)}
+`else
+	`define Warn_if
+`endif

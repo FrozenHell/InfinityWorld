@@ -31,7 +31,7 @@ var protected Pawn MyPawn;
 // сгенерирована ли галактика
 var bool bGenerated;
 // количество звёзд
-var int MaxStars;
+var int StarsCount;
 // масштаб
 var float GalaxyScale;
 // положение центра галактики относительно фокуса
@@ -70,7 +70,7 @@ auto state InMenu
 		local vector viewLocation; // положение игрока
 		local rotator viewRotation; // поворот игрока
 		GetPlayerViewPoint(viewLocation, viewRotation);
-		for (i = 0; i < MaxStars; i++)
+		for (i = 0; i < StarsCount; i++)
 		{
 			if (Stars[i] != None)
 			{
@@ -90,7 +90,7 @@ auto state InMenu
 		local float scale, unScale;
 		scale = 1.1;
 		unscale = WorldSize / scale;
-		for (i = 0; i < MaxStars; i++)
+		for (i = 0; i < StarsCount; i++)
 		{
 			if (Stars[i] != None)
 			{
@@ -154,15 +154,15 @@ function Gen(Pawn locPawn, int numStars)
 		GetNavData(MyData, numStars);
 		MyPawn = locPawn;
 		bGenerated = true;
-		MaxStars = numStars;
-		for (i = 0; i < MaxStars; i++)
+		StarsCount = numStars;
+		for (i = 0; i < StarsCount; i++)
 		{
 			Stars[i] = (Spawn(class'City.ministar', MyPawn,, Location, rot(0, 0, 0)));
 			Stars[i].Index = i;
 		}
 	}
 	else
-		`log("Galaxy already generated!");
+		`warn("Galaxy already generated!");
 
 	GalaxyCenter = vect(0, 0, 0);
 
@@ -222,7 +222,7 @@ function RedrawGalaxy()
 	rotMat.m33 = cos(fPitch) * cos(fYaw);
 
 	// для каждой звезды
-	for (i = 0; i < MaxStars; i++)
+	for (i = 0; i < StarsCount; i++)
 	{
 		// берём реальные координаты
 		locVec.x = MyData.NaviData[i * 3];
@@ -275,7 +275,7 @@ simulated function Destroyed()
 {
 	local int i;
 	if (bGenerated)
-		for (i = 0; i < MaxStars; i++)
+		for (i = 0; i < StarsCount; i++)
 		{
 			Stars[i].Destroy();
 		}
@@ -292,7 +292,7 @@ function ZoomIn()
 defaultproperties
 {
 	bGenerated = false
-	MaxStars = 0
+	StarsCount = 0
 	RangeScale = 0.0002
 	GalaxyScale = 0.1
 	bCosmos = false;
