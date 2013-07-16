@@ -47,24 +47,31 @@ var Actor MyPawn;
 var int Length, Width, Height, LenW, WidW, HeiW;
 // расстояние от игрока до дома
 var int Distance;
+// угол поворота здания
 var rotator Angle;
 // вспомогательная переменная для определения точных координат ячеек
 var vector HouseCenter;
 // тип здания (0 - обычное, 1 - часть трёхлучевого)
 var int BuildingType;
-// количество лестниц в здании
-var int StairsCount;
-// сдвиг информации о стенах
+
+// сдвиг информации о стенах в данных
 var int WallsOffset;
+
 // элементы пола
-var array<testFloor> Floors;
+var array<actor> Floors;
 // информация об элементах пола
 var array<Floor> FloorsInfo;
 // количество элементов пола
 var int FloorsCount;
 
+// количество лестниц в здании
+var int StairsCount;
 // лифты
 var array<LiftController> Lifts;
+
+// грани здания
+var TestGrain SWGrain, SEGrain, NWGrain, NEGrain;
+var TestRoofGrain TWGrain, TEGrain, TSgrain, TNGrain;
 
 // пока false - информация о доме не загружена в память а существует только LOD
 var bool bInitialized;
@@ -185,7 +192,7 @@ private function bool isBit(int a, int b)
 // возвращает число от 0 до 3 (два бита из числа a в позиции b*2)
 private function int get2bit(int a, int b)
 {
-	return((a >> (b << 1)) % 4);
+	return((a >> (b << 1)) & 3);
 }
 
 /*
@@ -204,7 +211,7 @@ private function int get2bit(int a, int b)
 private function rotator QwatRot(float qYaw) // очень часто выполняемая функция
 {
 	local rotator rota;
-	rota.Yaw = angle.Yaw +(qYaw == 0 ? 0 : qYaw == 1 ? UtoR : qYaw == 2 ? Utor2 : Utor3); // то же что qYaw * 90 * DegToRad * RadToUnrRot;
+	rota.Yaw = angle.Yaw + (qYaw == 0 ? 0 : qYaw == 1 ? UtoR : qYaw == 2 ? Utor2 : Utor3); // то же что qYaw * 90 * DegToRad * RadToUnrRot;
 	return rota;
 }
 
@@ -238,60 +245,22 @@ private function cell DrawCell(int celll, const out vector posit, int wzPos, int
 		yachejka.East = drawHPart(get2bit(celll, 2), 0, posit);
 	}
 
+	// если тут лестница
 	if (st)
 	{
-		if (wzPos == 1) // пол первого этажа лестницы
+		if (wzPos == 1) // если это первый этаж
 		{
 			yachejka.Pol = Spawn(class'City.teststairfloor', MyPawn,, posit, angle);
 		}
-		else // лестница
+		else // любой кроме первого
 		{
 			yachejka.Pol = Spawn(class'City.teststair', MyPawn,, posit, angle);
 		}
-	}
 
-	if (wzPos == 2) // если последний этаж
-	{
-		if (!st)
-			yachejka.Roof = Spawn(class'City.testroof', MyPawn,, posit, angle);
-		else
+		if (wzPos == 2) // последний этаж
+		{
 			yachejka.Roof = Spawn(class'City.testroofstair', MyPawn,, posit, angle);
-		if (wxPos == 1)
-		{
-			if (wyPos == 1)
-				yachejka.Grain = Spawn(class'City.testroofang', MyPawn,, posit, qwatrot(3)); // верхний левый угол
-			else if (wyPos == 2)
-				yachejka.Grain = Spawn(class'City.testroofang', MyPawn,, posit, qwatrot(2)); // нижний левый угол
-			else
-				yachejka.Grain = Spawn(class'City.testroofgrain', MyPawn,, posit, qwatrot(3)); // лево - середина
 		}
-		else if (wxPos == 2)
-		{
-			if (wyPos == 1)
-				yachejka.Grain = Spawn(class'City.testroofang', MyPawn,, posit, qwatrot(0)); // верхний правый угол
-			else if (wyPos == 2)
-				yachejka.Grain = Spawn(class'City.testroofang', MyPawn,, posit, qwatrot(1)); // нижний правый угол
-			else
-				yachejka.Grain = Spawn(class'City.testroofgrain', MyPawn,, posit, qwatrot(1)); // право - середина
-		}
-		else if (wyPos == 1)
-			yachejka.Grain = Spawn(class'City.testroofgrain', MyPawn,, posit, qwatrot(0)); // верх - середина
-		else if
-			(wyPos == 2) yachejka.Grain = Spawn(class'City.testroofgrain', MyPawn,, posit, qwatrot(2)); // низ - середина
-	}
-	else if (wxPos == 1)
-	{ // если не последний этаж
-		if (wyPos == 1)
-			yachejka.Grain = Spawn(class'City.testgrain',MyPawn,, posit, qwatrot(3)); // верхний левый угол
-		else if (wyPos == 2)
-			yachejka.Grain = Spawn(class'City.testgrain', MyPawn,, posit, qwatrot(2)); // нижний левый угол
-	}
-	else if (wxPos == 2)
-	{
-		if (wyPos == 1)
-			yachejka.Grain = Spawn(class'City.testgrain', MyPawn,, posit, qwatrot(0)); // верхний правый угол
-		else if
-			(wyPos == 2) yachejka.Grain = Spawn(class'City.testgrain', MyPawn,, posit, qwatrot(1)); // нижний правый угол
 	}
 
 	yachejka.bVisible = true;
@@ -410,6 +379,9 @@ private function DrawHouse(optional bool full = false)
 
 			if (Floors.Length == 0)
 				AddFloors();
+
+			if (TWGrain == None)
+				AddGrains();
 		}
 		else if (bInitialized)
 		{
@@ -421,6 +393,9 @@ private function DrawHouse(optional bool full = false)
 
 			if (Floors.Length != 0)
 				RemoveFloors();
+
+			if (TWGrain != None)
+				RemoveGrains();
 		}
 	}
 }
@@ -439,16 +414,28 @@ function AddFloors()
 	local int i, k;
 	local vector pos;
 	local testfloor localFloor;
+	local testroof localRoof;
 
-	for (k = 0; k < Height; k++)
-		for (i = 0; i < FloorsCount; i++)
+	// для каждого куска пола
+	for (i = 0; i < FloorsCount; i++)
+	{
+		// получаем координаты
+		pos = FloorsInfo[i].Pos;
+		// рисуем для каждого этажа
+		for (k = 0; k < Height; k++)
 		{
-			pos = FloorsInfo[i].Pos;
 			pos.z = Location.z + HeiW * k;
 			localFloor = Spawn(class'City.testfloor', MyPawn,, pos, angle);
 			localFloor.SetScale(FloorsInfo[i].Scale);
 			Floors.AddItem(localFloor);
 		}
+		
+		// рисуем для крыши
+		pos.z = Location.z + HeiW * (Height - 1);
+		localRoof = Spawn(class'City.testroof', MyPawn,, pos, angle);
+		localRoof.SetScale(FloorsInfo[i].Scale);
+		Floors.AddItem(localRoof);
+	}
 }
 
 // удалить все полы
@@ -459,6 +446,75 @@ function RemoveFloors()
 	for (i = 0; i < FloorsCount; i++)
 		Floors[i].Destroy();
 	Floors.Remove(0, Floors.Length);
+}
+
+// добавить все грани
+function AddGrains()
+{
+	local vector localPos;
+	local float height1;
+	height1 = Location.Z + (Height - 1) * HeiW;
+
+	localPos = Location;
+	localPos.Y -= ((Length - 1) * LenW) / 2;
+	localPos.Z = height1;
+	TWGrain = Spawn(class'City.testroofgrain', MyPawn,, localPos, QwatRot(0));
+	TWGrain.SetScale(Width);
+
+	localPos = Location;
+	localPos.X -= ((Width - 1) * WidW) / 2;
+	localPos.Z = height1;
+	TSgrain = Spawn(class'City.testroofgrain', MyPawn,, localPos, QwatRot(3));
+	TSgrain.SetScale(Length);
+
+	localPos = Location;
+	localPos.Y += ((Length - 1) * LenW) / 2;
+	localPos.Z = height1;
+	TEGrain = Spawn(class'City.testroofgrain', MyPawn,, localPos, QwatRot(2));
+	TEGrain.SetScale(Width);
+
+	localPos = Location;
+	localPos.X += ((Width - 1) * WidW) / 2;
+	localPos.Z = height1;
+	TNgrain = Spawn(class'City.testroofgrain', MyPawn,, localPos, QwatRot(1));
+	TNgrain.SetScale(Length);
+
+	localPos = Location + LOD_SHIFT;
+	localPos.Y -= ((Length - 1) * LenW) / 2;
+	localPos.X += ((Width - 1) * WidW) / 2;
+	SEGrain = Spawn(class'City.testgrain', MyPawn,, localPos, QwatRot(0));
+	SEGrain.SetScale(Height);
+
+	localPos = Location + LOD_SHIFT;
+	localPos.Y += ((Length - 1) * LenW) / 2;
+	localPos.X += ((Width - 1) * WidW) / 2;
+	NEGrain = Spawn(class'City.testgrain', MyPawn,, localPos, QwatRot(1));
+	NEGrain.SetScale(Height);
+
+	localPos = Location + LOD_SHIFT;
+	localPos.Y += ((Length - 1) * LenW) / 2;
+	localPos.X -= ((Width - 1) * WidW) / 2;
+	NWGrain = Spawn(class'City.testgrain', MyPawn,, localPos, QwatRot(2));
+	NWGrain.SetScale(Height);
+
+	localPos = Location + LOD_SHIFT;
+	localPos.Y -= ((Length - 1) * LenW) / 2;
+	localPos.X -= ((Width - 1) * WidW) / 2;
+	SWGrain = Spawn(class'City.testgrain', MyPawn,, localPos, QwatRot(3));
+	SWGrain.SetScale(Height);
+}
+
+// удалить все грани
+function RemoveGrains()
+{
+	TWGrain.Destroy();
+	TSgrain.Destroy();
+	TEGrain.Destroy();
+	TNGrain.Destroy();
+	SWGrain.Destroy();
+	SEGrain.Destroy();
+	NWGrain.Destroy();
+	NEGrain.Destroy();
 }
 
 // выделение памяти под здание
@@ -526,6 +582,7 @@ function bool IsStairHere(int xPos, int yPos, int zPos)
 	return stairHere;
 }
 
+// рисовать стену ячейки
 private function actor drawHPart(int partType, int ang, const out vector posit) // передавать вектор "по ссылке", а не "по значению", const говорит о том, что вектор не будет меняться в этой функции
 {
 	local actor mypExem;
@@ -547,6 +604,7 @@ private function actor drawHPart(int partType, int ang, const out vector posit) 
 	return mypExem;
 }
 
+// рисовать стену ячейки, которая выходит наружу здания
 private function actor drawHOutPart(int partType, int ang, const out vector posit) // передавать вектор "по ссылке", а не "по значению", const говорит о том, что вектор не будет меняться в этой функции
 {
 	local actor mypExem;
